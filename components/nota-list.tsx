@@ -351,7 +351,7 @@ export function NotaList() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="draft">Draft</TabsTrigger>
-              <TabsTrigger value="published">Published</TabsTrigger>
+              <TabsTrigger value="published">Terbit</TabsTrigger>
             </TabsList>
           </Tabs>
           <CardHeader>
@@ -375,7 +375,7 @@ export function NotaList() {
                     <Command>
                       <CommandInput placeholder="Search customer..." className="h-9" />
                       <CommandList>
-                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandEmpty>Belum ada customer.</CommandEmpty>
                         <CommandGroup>
                           <CommandItem
                             onSelect={() => {
@@ -442,7 +442,7 @@ export function NotaList() {
               </div>
               <Link href="/create-nota" className="w-full sm:w-auto">
                 <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
-                  <Plus className="mr-2 h-4 w-4" /> Create Nota
+                  <Plus className="mr-2 h-4 w-4" /> Buat Nota
                 </Button>
               </Link>
             </div>

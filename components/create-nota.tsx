@@ -333,9 +333,9 @@ export function CreateNota() {
         <p className="text-sm text-muted-foreground">
           {language === "id" ? (
             <>
-              menjual: sayur - mayur, bakso-bakso & buah-buahan
+              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan
               <br />
-              Pasar Mitra Raya Block B No 05, Batam Centre
+              Pasar Mitra Raya Block B No. 05, Batam Centre
               <br />
               Hp 082284228888
             </>
@@ -351,10 +351,14 @@ export function CreateNota() {
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <div className="text-sm text-muted-foreground">{language === "id" ? "Customer" : "客户"}</div>
+            <div className="text-sm text-muted-foreground">{language === "id" ? "Kepada" : "客户"}</div>
             <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
+            <div>{notaDate || "Not set"}</div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
@@ -398,10 +402,10 @@ export function CreateNota() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
+          {/* <div>
             <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
             <div>{notaDate || "Not set"}</div>
-          </div>
+          </div> */}
           {dueDate && (
             <div>
               <div className="text-sm text-muted-foreground">{language === "id" ? "Jatuh Tempo" : "到期日"}</div>
@@ -444,17 +448,17 @@ export function CreateNota() {
     <div className="min-h-screen flex flex-col">
       <div className="flex-grow container mx-auto p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold mb-4 sm:mb-0">Create Nota</h1>
-          <Button variant="ghost" className="text-muted-foreground">
+          <h1 className="text-xl font-semibold mb-4 sm:mb-0">Buat Nota</h1>
+          {/* <Button variant="ghost" className="text-muted-foreground">
             Do you need help? <X className="ml-2 h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Left Column - Nota Details */}
           <div className="space-y-6">
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Nota Details</h2>
+              <h2 className="text-lg font-semibold">Details Nota</h2>
 
               <div className="space-y-2">
                 <Label htmlFor="customer">Pilih Customer *</Label>
@@ -516,7 +520,7 @@ export function CreateNota() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="payment-status">Status Pembayaran</Label>
+                <Label htmlFor="payment-status">Status Pembayaran (Optional)</Label>
                 <Select
                   value={paymentStatus}
                   onValueChange={(value) => setPaymentStatus(value as "lunas" | "belum lunas")}
@@ -533,7 +537,7 @@ export function CreateNota() {
 
               {paymentStatus === "belum lunas" && (
                 <div className="space-y-2">
-                  <Label htmlFor="due-date">Jatuh Tempo</Label>
+                  <Label htmlFor="due-date">Jatuh Tempo (Optional)</Label>
                   <Input id="due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </div>
               )}

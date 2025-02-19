@@ -153,12 +153,12 @@ export function CustomerList() {
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={() => setIsCreateDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" /> Create Customer
+                    <Plus className="mr-2 h-4 w-4" /> Tambah Customer
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Create New Customer</DialogTitle>
+                    <DialogTitle>Tambah Customer Baru</DialogTitle>
                   </DialogHeader>
                   <CreateCustomerForm onSubmit={handleCreateCustomer} />
                 </DialogContent>
@@ -177,9 +177,9 @@ export function CustomerList() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left p-3 text-sm font-medium text-gray-600">Name</th>
-                  <th className="text-left p-3 text-sm font-medium text-gray-600">Store Name</th>
-                  <th className="text-left p-3 text-sm font-medium text-gray-600">Nota Code</th>
+                  <th className="text-left p-3 text-sm font-medium text-gray-600">Nama</th>
+                  <th className="text-left p-3 text-sm font-medium text-gray-600">Nama Toko</th>
+                  <th className="text-left p-3 text-sm font-medium text-gray-600">Kode Nota</th>
                   <th className="text-left p-3 text-sm font-medium text-gray-600">Status</th>
                   <th className="text-left p-3 text-sm font-medium text-gray-600">Actions</th>
                 </tr>
@@ -309,26 +309,26 @@ function CreateCustomerForm({ onSubmit }: CreateCustomerFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name">Nama</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div>
-        <Label htmlFor="storeName">Store Name</Label>
+        <Label htmlFor="storeName">Nama Toko</Label>
         <Input id="storeName" value={storeName} onChange={(e) => setStoreName(e.target.value)} required />
       </div>
       <div>
-        <Label htmlFor="address">Address</Label>
+        <Label htmlFor="address">Alamat (Optional)</Label>
         <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">Telepon (Optional)</Label>
         <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="notaCode">Nota Code</Label>
+        <Label htmlFor="notaCode">Kode Nota</Label>
         <Input id="notaCode" value={notaCode} onChange={(e) => setNotaCode(e.target.value)} required />
       </div>
-      <Button type="submit">Create Customer</Button>
+      <Button type="submit">Tambah Customer</Button>
     </form>
   )
 }
