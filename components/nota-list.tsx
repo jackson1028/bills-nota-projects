@@ -408,8 +408,8 @@ export function NotaList() {
                       className="w-full sm:w-[200px] justify-between"
                     >
                       {selectedCustomer
-                        ? customers.find((customer) => customer._id === selectedCustomer)?.storeName || "All Customers"
-                        : "All Customers"}
+                        ? customers.find((customer) => customer._id === selectedCustomer)?.storeName || "Semua Customer"
+                        : "Semua Customer"}
                       <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -425,7 +425,7 @@ export function NotaList() {
                               setOpenCustomer(false)
                             }}
                           >
-                            All Customers
+                            Semua Customer
                           </CommandItem>
                           {customers.map((customer) => (
                             <CommandItem
@@ -539,7 +539,7 @@ export function NotaList() {
                   className="text-gray-600 hover:text-gray-800"
                 >
                   <X className="mr-2 h-4 w-4" />
-                  Clear Filters
+                  Hapus Filter
                 </Button>
                 <Link href="/create-nota" className="w-full sm:w-auto">
                   <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
