@@ -11,6 +11,10 @@ export async function GET(request: Request) {
     const paymentStatus = searchParams.get("paymentStatus")
     const date = searchParams.get("date")
     const customerId = searchParams.get("customerId")
+    const createdAtFrom = searchParams.get("createdAtFrom")
+    const createdAtTo = searchParams.get("createdAtTo")
+    const notaDateFrom = searchParams.get("notaDateFrom")
+    const notaDateTo = searchParams.get("notaDateTo")
 
     const client = await clientPromise
     const db = client.db("notaApp")
@@ -24,17 +28,35 @@ export async function GET(request: Request) {
     if (paymentStatus && paymentStatus !== "all") {
       query.paymentStatus = paymentStatus
     }
-    if (date) {
-      const startDate = new Date(date)
-      const endDate = new Date(startDate)
-      endDate.setDate(endDate.getDate() + 1)
-      query.notaDate = { $gte: startDate, $lt: endDate }
+    if (notaDateFrom || notaDateTo) {
+      query.notaDate = {}
+      if (notaDateFrom) {
+        query.notaDate.$gte = new Date(notaDateFrom)
+      }
+      if (notaDateTo) {
+        const toDate = new Date(notaDateTo)
+        toDate.setDate(toDate.getDate() + 1)
+        toDate.setHours(23, 59, 59, 999)
+        query.notaDate.$lte = toDate
+      }
     }
     if (customerId && customerId !== "all") {
       query.customerId = new ObjectId(customerId)
     }
+    if (createdAtFrom || createdAtTo) {
+      query.createdAt = {}
+      if (createdAtFrom) {
+        query.createdAt.$gte = new Date(createdAtFrom)
+      }
+      if (createdAtTo) {
+        const toDate = new Date(createdAtTo)
+        toDate.setDate(toDate.getDate() + 1)
+        toDate.setHours(23, 59, 59, 999)
+        query.createdAt.$lte = toDate
+      }
+    }
 
-    const notas = await db.collection("notas").find(query).sort({ notaDate: -1 }).skip(skip).limit(limit).toArray()
+    const notas = await db.collection("notas").find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray()
 
     const totalItems = await db.collection("notas").countDocuments(query)
 

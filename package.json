@@ -65,9 +65,9 @@
     "@mongodb-js/zstd": "latest",
     "mongodb-client-encryption": "latest",
     "@aws-sdk/credential-providers": "latest",
+    "lodash": "latest",
     "mongodb": "latest",
-    "bcryptjs": "latest",
-    "lodash": "latest"
+    "bcryptjs": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
