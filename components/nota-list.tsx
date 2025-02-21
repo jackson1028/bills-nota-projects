@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { format, enUS } from "date-fns"
+import { format } from "date-fns"
 import Link from "next/link"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -31,11 +31,13 @@ interface Nota {
   createdBy: string
   items?: { name: string; qty: number; price: number }[]
   customerId?: string
+  customer?: { requireHeaderNota: boolean }
 }
 
 interface Customer {
   _id: string
   storeName: string
+  requireHeaderNota?: boolean
 }
 
 const NotaPreview = `
@@ -191,7 +193,17 @@ export function NotaList() {
     } finally {
       setIsLoading(false)
     }
-  }, [currentPage, itemsPerPage, activeTab, paymentStatus, selectedCustomer, date, createdAtRange, notaDateRange, toast])
+  }, [
+    currentPage,
+    itemsPerPage,
+    activeTab,
+    paymentStatus,
+    selectedCustomer,
+    date,
+    createdAtRange,
+    notaDateRange,
+    toast,
+  ])
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -267,97 +279,105 @@ export function NotaList() {
     const printWindow = window.open("", "_blank")
     if (printWindow) {
       const selectedCustomer = customers.find((c) => c._id === nota.customerId)
+      const showHeader = selectedCustomer?.requireHeaderNota !== false
       printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print Nota</title>
-          <style>
-            body { font-family: Arial, sans-serif; }
-            .nota-container { max-width: 800px; margin: 0 auto; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
-            .signature-box { text-align: center; width: 30%; }
-            .signature-line { border-top: 1px solid black; margin-top: 50px; }
-          </style>
-        </head>
-        <body>
-          <div class="nota-container">
+    <html>
+      <head>
+        <title>Print Nota</title>
+        <style>
+          body { font-family: Arial, sans-serif; }
+          .nota-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
+          .signature-box { text-align: center; width: 30%; }
+          .signature-line { border-top: 1px solid black; margin-top: 50px; }
+          ${!showHeader ? ".nota-container { padding-top: 40px; }" : ""}
+        </style>
+      </head>
+      <body>
+        <div class="nota-container">
+          ${
+            showHeader
+              ? `
             <h1>Toko Yanto</h1>
             <p>
-              menjual: sayur - mayur, bakso-bakso & buah-buahan<br>
-              Pasar Mitra Raya Block B No 05, Batam Centre<br>
+              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
+              Pasar Mitra Raya Block B No. 05, Batam Centre<br>
               Hp 082284228888
             </p>
-            <table>
+          `
+              : ""
+          }
+          <table>
+            <tr>
+              <td><strong>Customer:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
+              <td><strong>Nomor Nota:</strong> ${nota.notaNumber}</td>
+            </tr>
+            <tr>
+              <td><strong>Tanggal Nota:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
+              <td><strong>Jatuh Tempo:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
+            </tr>
+          </table>
+          <table style="margin-top: 20px;">
+            <thead>
               <tr>
-                <td><strong>Customer:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
-                <td><strong>Nomor Nota:</strong> ${nota.notaNumber}</td>
+                <th>#</th>
+                <th></th>
+                <th>Nama Barang</th>
+                <th>Qty</th>
+                <th>Harga</th>
+                <th>Jumlah</th>
               </tr>
+            </thead>
+            <tbody>
+              ${
+                nota.items
+                  ? nota.items
+                      .map(
+                        (item, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td><div style="width: 20px; height: 20px; border: 1px solid black;"></div></td>
+                  <td>${item.name}</td>
+                  <td>${item.qty}</td>
+                  <td>Rp${item.price.toLocaleString()}</td>
+                  <td>Rp${(item.qty * item.price).toLocaleString()}</td>
+                </tr>
+              `,
+                      )
+                      .join("")
+                  : ""
+              }
               <tr>
-                <td><strong>Tanggal Nota:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
-                <td><strong>Jatuh Tempo:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
+                <td colspan="5" style="text-align: right;"><strong>Total:</strong></td>
+                <td><strong>Rp${nota.total.toLocaleString()}</strong></td>
               </tr>
-            </table>
-            <table style="margin-top: 20px;">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th></th>
-                  <th>Nama Barang</th>
-                  <th>Qty</th>
-                  <th>Harga</th>
-                  <th>Jumlah</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${
-                  nota.items
-                    ? nota.items
-                        .map(
-                          (item, index) => `
-                  <tr>
-                    <td>${index + 1}</td>
-                    <td><div style="width: 20px; height: 20px; border: 1px solid black;"></div></td>
-                    <td>${item.name}</td>
-                    <td>${item.qty}</td>
-                    <td>Rp${item.price.toLocaleString()}</td>
-                    <td>Rp${(item.qty * item.price).toLocaleString()}</td>
-                  </tr>
-                `,
-                        )
-                        .join("")
-                    : ""
-                }
-                <tr>
-                  <td colspan="5" style="text-align: right;"><strong>Total:</strong></td>
-                  <td><strong>Rp${nota.total.toLocaleString()}</strong></td>
-                </tr>
-              </tbody>
-            </table>
-            <p><strong>Status Pembayaran:</strong> ${nota.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
-            <div class="signature-section">
-              <div class="signature-box">
-                <p>Dibuat Oleh</p>
-                <div class="signature-line"></div>
-                <p>(______________)</p>
-              </div>
-              <div class="signature-box">
-                <p>Pengantar</p>
-                <div class="signature-line"></div>
-                <p>(______________)</p>
-              </div>
-              <div class="signature-box">
-                <p>Penerima</p>
-                <div class="signature-line"></div>
-                <p>(______________)</p>
-              </div>
+            </tbody>
+          </table>
+          <p><strong>Status Pembayaran:</strong> ${nota.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
+          <div class="signature-section">
+            <div class="signature-box">
+              <p>Dibuat Oleh</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
+            </div>
+            <div class="signature-box">
+              <p>Pengantar</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
+            </div>
+            <div class="signature-box">
+              <p>Penerima</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
             </div>
           </div>
-        </body>
-      </html>
-    `)
+        </div>
+      </body>
+    </html>
+  `)
       printWindow.document.close()
       printWindow.print()
     }
@@ -443,7 +463,7 @@ export function NotaList() {
                     </Command>
                   </PopoverContent>
                 </Popover>
-               <div className="flex space-x-2">
+                <div className="flex space-x-2">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -454,7 +474,7 @@ export function NotaList() {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        
+
                         {notaDateRange?.from && notaDateRange.from ? (
                           notaDateRange.to ? (
                             <>
@@ -491,7 +511,7 @@ export function NotaList() {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        
+
                         {createdAtRange?.from && createdAtRange.from ? (
                           createdAtRange.to ? (
                             <>

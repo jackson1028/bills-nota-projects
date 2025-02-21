@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface Customer {
   _id: string
@@ -15,6 +16,7 @@ interface Customer {
   address?: string
   phone?: string
   notaCode: string
+  requireHeaderNota: boolean
 }
 
 interface EditCustomerProps {
@@ -29,6 +31,7 @@ export function EditCustomer({ customer, onCustomerUpdated, onCancel }: EditCust
   const [address, setAddress] = useState(customer.address || "")
   const [phone, setPhone] = useState(customer.phone || "")
   const [notaCode, setNotaCode] = useState(customer.notaCode)
+  const [requireHeaderNota, setRequireHeaderNota] = useState(customer.requireHeaderNota)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -48,6 +51,7 @@ export function EditCustomer({ customer, onCustomerUpdated, onCancel }: EditCust
           address,
           phone,
           notaCode,
+          requireHeaderNota,
         }),
       })
 
@@ -56,8 +60,8 @@ export function EditCustomer({ customer, onCustomerUpdated, onCancel }: EditCust
       }
 
       toast({
-        title: "Success",
-        description: "Customer updated successfully",
+        title: "Sukses",
+        description: "Data pelanggan berhasil diperbarui",
       })
 
       onCustomerUpdated()
@@ -66,7 +70,7 @@ export function EditCustomer({ customer, onCustomerUpdated, onCancel }: EditCust
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update customer",
+        description: "Gagal memperbarui data pelanggan",
       })
     } finally {
       setIsLoading(false)
@@ -76,31 +80,39 @@ export function EditCustomer({ customer, onCustomerUpdated, onCancel }: EditCust
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name">Nama</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div>
-        <Label htmlFor="storeName">Store Name</Label>
+        <Label htmlFor="storeName">Nama Toko</Label>
         <Input id="storeName" value={storeName} onChange={(e) => setStoreName(e.target.value)} required />
       </div>
       <div>
-        <Label htmlFor="address">Address</Label>
+        <Label htmlFor="address">Alamat</Label>
         <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">Telepon</Label>
         <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="notaCode">Nota Code</Label>
+        <Label htmlFor="notaCode">Kode Nota</Label>
         <Input id="notaCode" value={notaCode} onChange={(e) => setNotaCode(e.target.value)} required />
+      </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="requireHeaderNota"
+          checked={requireHeaderNota}
+          onCheckedChange={(checked) => setRequireHeaderNota(checked as boolean)}
+        />
+        <Label htmlFor="requireHeaderNota">Wajib Header Nota</Label>
       </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          Batal
         </Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Updating..." : "Update Customer"}
+          {isLoading ? "Memperbarui..." : "Perbarui Pelanggan"}
         </Button>
       </div>
     </form>

@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EditCustomer } from "@/components/edit-customer"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface Customer {
   _id: string
@@ -22,6 +23,7 @@ interface Customer {
   phone?: string
   notaCode: string
   tags?: string[]
+  requireHeaderNota?: boolean
 }
 
 export function CustomerList() {
@@ -294,16 +296,18 @@ function CreateCustomerForm({ onSubmit }: CreateCustomerFormProps) {
   const [address, setAddress] = useState("")
   const [phone, setPhone] = useState("")
   const [notaCode, setNotaCode] = useState("")
+  const [requireHeaderNota, setRequireHeaderNota] = useState(true)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ name, storeName, address, phone, notaCode })
+    onSubmit({ name, storeName, address, phone, notaCode, requireHeaderNota })
     // Reset form fields
     setName("")
     setStoreName("")
     setAddress("")
     setPhone("")
     setNotaCode("")
+    setRequireHeaderNota(true)
   }
 
   return (
@@ -327,6 +331,14 @@ function CreateCustomerForm({ onSubmit }: CreateCustomerFormProps) {
       <div>
         <Label htmlFor="notaCode">Kode Nota</Label>
         <Input id="notaCode" value={notaCode} onChange={(e) => setNotaCode(e.target.value)} required />
+      </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="requireHeaderNota"
+          checked={requireHeaderNota}
+          onCheckedChange={(checked) => setRequireHeaderNota(checked as boolean)}
+        />
+        <Label htmlFor="requireHeaderNota">Wajib Header Nota</Label>
       </div>
       <Button type="submit">Tambah Customer</Button>
     </form>

@@ -24,9 +24,22 @@ export async function GET(request: Request, { params }: { params: { id: string }
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const body = await request.json()
+    const { name, storeName, address, phone, notaCode, requireHeaderNota } = body
     const client = await clientPromise
     const db = client.db("notaApp")
-    const result = await db.collection("customers").updateOne({ _id: new ObjectId(params.id) }, { $set: body })
+    const result = await db.collection("customers").updateOne(
+      { _id: new ObjectId(params.id) },
+      {
+        $set: {
+          name,
+          storeName,
+          address,
+          phone,
+          notaCode,
+          requireHeaderNota,
+        },
+      },
+    )
     if (result.matchedCount > 0) {
       const updatedCustomer = await db.collection("customers").findOne({ _id: new ObjectId(params.id) })
       return NextResponse.json(updatedCustomer)

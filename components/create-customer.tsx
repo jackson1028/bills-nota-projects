@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface CreateCustomerProps {
   onCustomerCreated: () => void
@@ -18,6 +19,7 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
   const [address, setAddress] = useState("")
   const [phone, setPhone] = useState("")
   const [notaCode, setNotaCode] = useState("")
+  const [requireHeaderNota, setRequireHeaderNota] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -37,6 +39,7 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
           address,
           phone,
           notaCode,
+          requireHeaderNota,
         }),
       })
 
@@ -55,6 +58,7 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
       setAddress("")
       setPhone("")
       setNotaCode("")
+      setRequireHeaderNota(true)
 
       // Notify parent component
       onCustomerCreated()
@@ -73,27 +77,35 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name">Nama</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div>
-        <Label htmlFor="storeName">Store Name</Label>
+        <Label htmlFor="storeName">Nama Toko</Label>
         <Input id="storeName" value={storeName} onChange={(e) => setStoreName(e.target.value)} required />
       </div>
       <div>
-        <Label htmlFor="address">Address</Label>
+        <Label htmlFor="address">Alamat (Optional)</Label>
         <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">Telepon (Optional)</Label>
         <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="notaCode">Nota Code</Label>
+        <Label htmlFor="notaCode">Kode Nota</Label>
         <Input id="notaCode" value={notaCode} onChange={(e) => setNotaCode(e.target.value)} required />
       </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="requireHeaderNota"
+          checked={requireHeaderNota}
+          onCheckedChange={(checked) => setRequireHeaderNota(checked as boolean)}
+        />
+        <Label htmlFor="requireHeaderNota">Wajib Header Nota</Label>
+      </div>
       <Button type="submit" disabled={isLoading}>
-        {isLoading ? "Creating..." : "Create Customer"}
+        {isLoading ? "Membuat..." : "Tambah Customer"}
       </Button>
     </form>
   )

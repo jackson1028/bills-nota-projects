@@ -22,6 +22,7 @@ interface Customer {
   _id: string
   name: string
   storeName: string
+  requireHeaderNota?: boolean
 }
 
 interface Nota {
@@ -249,145 +250,160 @@ export function EditNota({ notaId }: { notaId: string }) {
     }
   }
 
-  const NotaPreview = ({ language }: { language: "id" | "zh" }) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {language === "id" ? (
-            <>
-              menjual: sayur - mayur, bakso-bakso & buah-buahan
-              <br />
-              Pasar Mitra Raya Block B No 05, Batam Centre
-              <br />
-              Hp 082284228888
-            </>
-          ) : (
-            <>
-              销售：蔬菜、肉丸和水果
-              <br />
-              巴淡岛中心Mitra Raya市场B座05号
-              <br />
-              电话：082284228888
-            </>
-          )}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div className="text-sm text-muted-foreground">{language === "id" ? "Customer" : "客户"}</div>
-            <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
-            <div>{notaNumber || "Not set"}</div>
-          </div>
-        </div>
+  const NotaPreview = ({ language }: { language: "id" | "zh" }) => {
+    const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
+    const showHeader = selectedCustomerObj?.requireHeaderNota !== false
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 text-sm">#</th>
-                <th className="text-left py-2 text-sm"></th>
-                <th className="text-left py-2 text-sm">{language === "id" ? "Nama Barang" : "商品名称"}</th>
-                <th className="text-left py-2 text-sm">{language === "id" ? "Qty" : "数量"}</th>
-                <th className="text-left py-2 text-sm">{language === "id" ? "Harga" : "价格"}</th>
-                <th className="text-right py-2 text-sm">{language === "id" ? "Jumlah" : "金额"}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, index) => (
-                <tr key={item.id} className="border-b last:border-0">
-                  <td className="py-2">{index + 1}</td>
-                  <td className="py-2">
-                    <div className="border border-gray-300 w-4 h-4"></div>
-                  </td>
-                  <td className="py-2">{item.name}</td>
-                  <td className="py-2">{item.qty}</td>
-                  <td className="py-2">Rp{item.price.toLocaleString()}</td>
-                  <td className="py-2 text-right">Rp{(item.qty * item.price).toLocaleString()}</td>
+    return (
+      <Card className={!showHeader ? "pt-6" : ""}>
+        {showHeader && (
+          <CardHeader>
+            <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {language === "id" ? (
+                <>
+                  Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan
+                  <br />
+                  Pasar Mitra Raya Block B No. 05, Batam Centre
+                  <br />
+                  Hp 082284228888
+                </>
+              ) : (
+                <>
+                  销售：蔬菜、肉丸和水果
+                  <br />
+                  巴淡岛中心Mitra Raya市场B座05号
+                  <br />
+                  电话：082284228888
+                </>
+              )}
+            </p>
+          </CardHeader>
+        )}
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">{language === "id" ? "Customer" : "客户"}</div>
+              <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
+              <div>{notaNumber || "Not set"}</div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 text-sm">#</th>
+                  <th className="text-left py-2 text-sm"></th>
+                  <th className="text-left py-2 text-sm">{language === "id" ? "Nama Barang" : "商品名称"}</th>
+                  <th className="text-left py-2 text-sm">{language === "id" ? "Qty" : "数量"}</th>
+                  <th className="text-left py-2 text-sm">{language === "id" ? "Harga" : "价格"}</th>
+                  <th className="text-right py-2 text-sm">{language === "id" ? "Jumlah" : "金额"}</th>
                 </tr>
-              ))}
-              <tr className="font-medium">
-                <td colSpan={5} className="py-2 text-right">
-                  {language === "id" ? "Total:" : "总计："}
-                </td>
-                <td className="py-2 text-right">Rp{total.toLocaleString()}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {items.map((item, index) => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="py-2">{index + 1}</td>
+                    <td className="py-2">
+                      <div className="border border-gray-300 w-4 h-4"></div>
+                    </td>
+                    <td className="py-2">{item.name}</td>
+                    <td className="py-2">{item.qty}</td>
+                    <td className="py-2">Rp{item.price.toLocaleString()}</td>
+                    <td className="py-2 text-right">Rp{(item.qty * item.price).toLocaleString()}</td>
+                  </tr>
+                ))}
+                <tr className="font-medium">
+                  <td colSpan={5} className="py-2 text-right">
+                    {language === "id" ? "Total:" : "总计："}
+                  </td>
+                  <td className="py-2 text-right">Rp{total.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
-            <div>{notaDate || "Not set"}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
+              <div>{notaDate || "Not set"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">{language === "id" ? "Jatuh Tempo" : "到期日"}</div>
+              <div>{dueDate || "Not set"}</div>
+            </div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground">{language === "id" ? "Jatuh Tempo" : "到期日"}</div>
-            <div>{dueDate || "Not set"}</div>
+            <div className="text-sm text-muted-foreground">{language === "id" ? "Status Pembayaran" : "支付状态"}</div>
+            <div>
+              {paymentStatus === "lunas"
+                ? language === "id"
+                  ? "Lunas"
+                  : "已付款"
+                : language === "id"
+                  ? "Belum Lunas"
+                  : "未付款"}
+            </div>
           </div>
-        </div>
-        <div>
-          <div className="text-sm text-muted-foreground">{language === "id" ? "Status Pembayaran" : "支付状态"}</div>
-          <div>
-            {paymentStatus === "lunas"
-              ? language === "id"
-                ? "Lunas"
-                : "已付款"
-              : language === "id"
-                ? "Belum Lunas"
-                : "未付款"}
-          </div>
-        </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-8">
-          <div className="text-center">
-            <div className="mb-16">{language === "id" ? "Dibuat Oleh" : "制作人"}</div>
-            <div className="border-t border-black pt-2">(______________)</div>
+          <div className="grid grid-cols-3 gap-4 mt-8">
+            <div className="text-center">
+              <div className="mb-16">{language === "id" ? "Dibuat Oleh" : "制作人"}</div>
+              <div className="border-t border-black pt-2">(______________)</div>
+            </div>
+            <div className="text-center">
+              <div className="mb-16">{language === "id" ? "Pengantar" : "送货员"}</div>
+              <div className="border-t border-black pt-2">(______________)</div>
+            </div>
+            <div className="text-center">
+              <div className="mb-16">{language === "id" ? "Penerima" : "收货人"}</div>
+              <div className="border-t border-black pt-2">(______________)</div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="mb-16">{language === "id" ? "Pengantar" : "送货员"}</div>
-            <div className="border-t border-black pt-2">(______________)</div>
-          </div>
-          <div className="text-center">
-            <div className="mb-16">{language === "id" ? "Penerima" : "收货人"}</div>
-            <div className="border-t border-black pt-2">(______________)</div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+        </CardContent>
+      </Card>
+    )
+  }
 
   const handlePrint = () => {
     const printWindow = window.open("", "_blank")
     if (printWindow) {
       const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
+      const showHeader = selectedCustomerObj?.requireHeaderNota !== false
       printWindow.document.write(`
-        <html>
-          <head>
-            <title>Print Nota</title>
-            <style>
-              body { font-family: Arial, sans-serif; }
-              .nota-container { max-width: 800px; margin: 0 auto; padding: 20px; }
-              table { width: 100%; border-collapse: collapse; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f2f2f2; }
-              .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
-              .signature-box { text-align: center; width: 30%; }
-              .signature-line { border-top: 1px solid black; margin-top: 50px; }
-            </style>
-          </head>
-          <body>
-            <div class="nota-container">
+      <html>
+        <head>
+          <title>Print Nota</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            .nota-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
+            .signature-box { text-align: center; width: 30%; }
+            .signature-line { border-top: 1px solid black; margin-top: 50px; }
+            ${!showHeader ? ".nota-container { padding-top: 40px; }" : ""}
+          </style>
+        </head>
+        <body>
+          <div class="nota-container">
+            ${
+              showHeader
+                ? `
               <h1>Toko Yanto</h1>
               <p>
-                menjual: sayur - mayur, bakso-bakso & buah-buahan<br>
-                Pasar Mitra Raya Block B No 05, Batam Centre<br>
+                Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
+                Pasar Mitra Raya Block B No. 05, Batam Centre<br>
                 Hp 082284228888
               </p>
+            `
+                : ""
+            }
               <table>
                 <tr>
                   <td><strong>Customer:</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"}</td>
@@ -448,10 +464,11 @@ export function EditNota({ notaId }: { notaId: string }) {
                   <p>(______________)</p>
                 </div>
               </div>
-            </div>
-          </body>
-        </html>
-      `)
+            
+          </div>
+        </body>
+      </html>
+    `)
       printWindow.document.close()
       printWindow.print()
     }
