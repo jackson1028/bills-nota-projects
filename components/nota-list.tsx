@@ -167,7 +167,7 @@ export function NotaList() {
         throw new Error("Failed to delete nota")
       }
 
-      toast.success("Success",{
+      toast.success("Success", {
         description: "Nota deleted successfully",
       })
 
@@ -211,6 +211,7 @@ export function NotaList() {
 
         printContent += `
     <div class="page ${pageSize}">
+      ${nota.paymentStatus === "lunas" ? '<div class="watermark">LUNAS</div>' : ''}
       ${
         showHeader
           ? `
@@ -382,6 +383,22 @@ export function NotaList() {
           margin-top: 2mm;
           font-size: 6pt;
         }
+        .watermark {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          font-size: 120px;
+          font-weight: 900;
+          color: rgba(0, 150, 0, 0.15); /* Warna hijau transparan */
+          z-index: 9999;
+          pointer-events: none;
+          user-select: none;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+          font-family: 'Arial', sans-serif;
+          letter-spacing: 10px;
+          opacity: 0.6;
+        }
       </style>
     </head>
     <body>
@@ -430,7 +447,7 @@ export function NotaList() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-              <div className="flex space-x-2">
+                <div className="flex space-x-2">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -512,7 +529,7 @@ export function NotaList() {
                     </PopoverContent>
                   </Popover>
                 </div>
-               
+
                 <Popover open={openCustomer} onOpenChange={setOpenCustomer}>
                   <PopoverTrigger asChild>
                     <Button
@@ -557,7 +574,7 @@ export function NotaList() {
                     </Command>
                   </PopoverContent>
                 </Popover>
-               
+
                 <Select
                   value={paymentStatus}
                   onValueChange={(value) => setPaymentStatus(value as "all" | "lunas" | "belum lunas")}
