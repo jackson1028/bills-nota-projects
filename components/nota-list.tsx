@@ -463,7 +463,7 @@ export function NotaList() {
                         selected={createdAtRange}
                         onSelect={(range) => {
                           if (range) {
-                            setNotaDateRange(range); // Hanya set state jika range tidak undefined
+                            setCreatedAtRange(range); // Hanya set state jika range tidak undefined
                           }
                         }}
                         numberOfMonths={2}
