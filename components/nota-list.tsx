@@ -29,9 +29,9 @@ interface Nota {
   paymentStatus: "lunas" | "belum lunas"
   dueDate?: string
   createdBy: string
-  items?: { name: string; qty: number; price: number }[]
+  items?: { name: string; qty: number; price: number; unit: string }[]
   customerId?: string
-  customer?: { requireHeaderNota: boolean }
+  customer?: { requireHeaderNota: boolean; storeName: string }
 }
 
 interface Customer {
@@ -39,81 +39,6 @@ interface Customer {
   storeName: string
   requireHeaderNota?: boolean
 }
-
-const NotaPreview = `
-  function NotaPreview({ notaNumber, customerName, notaDate, dueDate, items, total, paymentStatus, language }) {
-    const formatCurrency = (amount) => {
-      return new Intl.NumberFormat(language, { style: 'currency', currency: 'IDR' }).format(amount);
-    };
-
-    return (
-      <div className="nota-container">
-        <h1>Toko Yanto</h1>
-        <p>
-          menjual: sayur - mayur, bakso-bakso & buah-buahan<br>
-          Pasar Mitra Raya Block B No 05, Batam Centre<br>
-          Hp 082284228888
-        </p>
-        <table>
-          <tr>
-            <td><strong>Customer:</strong> {customerName}</td>
-            <td><strong>Nomor Nota:</strong> {notaNumber}</td>
-          </tr>
-          <tr>
-            <td><strong>Tanggal Nota:</strong> {notaDate}</td>
-            <td><strong>Jatuh Tempo:</strong> {dueDate || "-"}</td>
-          </tr>
-        </table>
-        <table style="margin-top: 20px;">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th></th>
-              <th>Nama Barang</th>
-              <th>Qty</th>
-              <th>Harga</th>
-              <th>Jumlah</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={index}>
-                <td>{index + 1}</td>
-                <td><div style="width: 20px; height: 20px; border: 1px solid black;"></div></td>
-                <td>{item.name}</td>
-                <td>{item.qty}</td>
-                <td>{formatCurrency(item.price)}</td>
-                <td>{formatCurrency(item.qty * item.price)}</td>
-              </tr>
-            ))}
-            <tr>
-              <td colSpan="5" style="text-align: right;"><strong>Total:</strong></td>
-              <td><strong>{formatCurrency(total)}</strong></td>
-            </tr>
-          </tbody>
-        </table>
-        <p><strong>Status Pembayaran:</strong> {paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
-        <div className="signature-section">
-          <div className="signature-box">
-            <p>Dibuat Oleh</p>
-            <div className="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-          <div className="signature-box">
-            <p>Pengantar</p>
-            <div className="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-          <div className="signature-box">
-            <p>Penerima</p>
-            <div className="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-`
 
 export function NotaList() {
   const router = useRouter()
@@ -227,12 +152,7 @@ export function NotaList() {
     fetchCustomers()
   }, [toast])
 
-  const debouncedFetchNotas = useCallback(
-    debounce(() => {
-      fetchNotas()
-    }, 300),
-    [fetchNotas],
-  )
+  const debouncedFetchNotas = useCallback(debounce(fetchNotas, 300), [fetchNotas])
 
   useEffect(() => {
     debouncedFetchNotas()
@@ -280,81 +200,84 @@ export function NotaList() {
     if (printWindow) {
       const selectedCustomer = customers.find((c) => c._id === nota.customerId)
       const showHeader = selectedCustomer?.requireHeaderNota !== false
-      printWindow.document.write(`
-    <html>
-      <head>
-        <title>Print Nota</title>
-        <style>
-          body { font-family: Arial, sans-serif; }
-          .nota-container { max-width: 800px; margin: 0 auto; padding: 20px; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-          .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
-          .signature-box { text-align: center; width: 30%; }
-          .signature-line { border-top: 1px solid black; margin-top: 50px; }
-          ${!showHeader ? ".nota-container { padding-top: 40px; }" : ""}
-        </style>
-      </head>
-      <body>
-        <div class="nota-container">
-          ${
-            showHeader
-              ? `
+      const isA5 = nota.items && nota.items.length <= 10
+      const pageSize = isA5 ? "A5" : "A4"
+      const pageWidth = isA5 ? 148 : 210
+      const pageHeight = isA5 ? 210 : 297
+      const itemsPerPage = isA5 ? 10 : 25
+
+      const pageCount = Math.ceil((nota.items?.length || 0) / itemsPerPage)
+
+      let printContent = ""
+      for (let page = 0; page < pageCount; page++) {
+        const startIndex = page * itemsPerPage
+        const endIndex = Math.min((page + 1) * itemsPerPage, nota.items?.length || 0)
+        const pageItems = nota.items?.slice(startIndex, endIndex) || []
+
+        if (pageItems.length === 0) continue
+
+        printContent += `
+    <div class="page ${pageSize}">
+      ${
+        showHeader
+          ? `
+          <div class="header">
             <h1>Toko Yanto</h1>
             <p>
               Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
               Pasar Mitra Raya Block B No. 05, Batam Centre<br>
               Hp 082284228888
             </p>
-          `
-              : ""
-          }
-          <table>
+          </div>
+        `
+          : ""
+      }
+      <table class="info-table">
+        <tr>
+          <td><strong>Kepada:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
+          <td><strong>Nomor Nota:</strong> ${nota.notaNumber}</td>
+        </tr>
+        <tr>
+          <td><strong>Tanggal Nota:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
+          <td><strong>Jatuh Tempo:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
+        </tr>
+      </table>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th></th>
+            <th>Nama Barang</th>
+            <th>Qty</th>
+            <th>Harga</th>
+            <th>Jumlah</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageItems
+            .map(
+              (item, index) => `
             <tr>
-              <td><strong>Customer:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
-              <td><strong>Nomor Nota:</strong> ${nota.notaNumber}</td>
+              <td>${startIndex + index + 1}</td>
+              <td><div class="checkbox"></div></td>
+              <td>${item.name}</td>
+              <td>${item.qty} ${item.unit}</td>
+              <td>Rp${item.price.toLocaleString()}</td>
+              <td>Rp${(item.qty * item.price).toLocaleString()}</td>
             </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+      ${
+        page === pageCount - 1
+          ? `
+          <table class="total-table">
             <tr>
-              <td><strong>Tanggal Nota:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
-              <td><strong>Jatuh Tempo:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
+              <td colspan="5" class="text-right"><strong>Total:</strong></td>
+              <td><strong>Rp${nota.total.toLocaleString()}</strong></td>
             </tr>
-          </table>
-          <table style="margin-top: 20px;">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th></th>
-                <th>Nama Barang</th>
-                <th>Qty</th>
-                <th>Harga</th>
-                <th>Jumlah</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${
-                nota.items
-                  ? nota.items
-                      .map(
-                        (item, index) => `
-                <tr>
-                  <td>${index + 1}</td>
-                  <td><div style="width: 20px; height: 20px; border: 1px solid black;"></div></td>
-                  <td>${item.name}</td>
-                  <td>${item.qty}</td>
-                  <td>Rp${item.price.toLocaleString()}</td>
-                  <td>Rp${(item.qty * item.price).toLocaleString()}</td>
-                </tr>
-              `,
-                      )
-                      .join("")
-                  : ""
-              }
-              <tr>
-                <td colspan="5" style="text-align: right;"><strong>Total:</strong></td>
-                <td><strong>Rp${nota.total.toLocaleString()}</strong></td>
-              </tr>
-            </tbody>
           </table>
           <p><strong>Status Pembayaran:</strong> ${nota.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
           <div class="signature-section">
@@ -374,10 +297,105 @@ export function NotaList() {
               <p>(______________)</p>
             </div>
           </div>
-        </div>
-      </body>
-    </html>
-  `)
+        `
+          : ""
+      }
+      ${pageCount > 1 ? `<div class="page-number">Halaman ${page + 1} dari ${pageCount}</div>` : ""}
+    </div>
+  `
+      }
+
+      printWindow.document.write(`
+  <html>
+    <head>
+      <title>Print Nota</title>
+      <style>
+        @page {
+          size: ${pageSize};
+          margin: 0;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          font-size: 8pt;
+        }
+        .page {
+          width: ${pageWidth}mm;
+          height: ${pageHeight}mm;
+          padding: 10mm;
+          box-sizing: border-box;
+          page-break-after: always;
+        }
+        .header {
+          margin-bottom: 5mm;
+        }
+        .header h1 {
+          margin: 0 0 2mm 0;
+          font-size: 12pt;
+        }
+        .header p {
+          margin: 0;
+          line-height: 1.2;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 3mm;
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 1mm;
+          text-align: left;
+          font-size: 7pt;
+        }
+        th {
+          background-color: #f2f2f2;
+          font-weight: normal;
+        }
+        .info-table td {
+          border: none;
+          padding: 1mm 0;
+        }
+        .items-table th, .items-table td {
+          padding: 0.5mm;
+        }
+        .total-table {
+          margin-top: 2mm;
+        }
+        .checkbox {
+          width: 2mm;
+          height: 2mm;
+          border: 0.5pt solid black;
+          display: inline-block;
+        }
+        .signature-section {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 5mm;
+          font-size: 6pt;
+        }
+        .signature-box {
+          text-align: center;
+          width: 30%;
+        }
+        .signature-line {
+          border-top: 1px solid black;
+          margin-top: 10mm;
+          width: 100%;
+        }
+        .page-number {
+          text-align: center;
+          margin-top: 2mm;
+          font-size: 6pt;
+        }
+      </style>
+    </head>
+    <body>
+      ${printContent}
+    </body>
+  </html>
+`)
       printWindow.document.close()
       printWindow.print()
     }
@@ -619,16 +637,14 @@ export function NotaList() {
                             >
                               <Printer className="h-4 w-4" />
                             </Button>
-                            {nota.status === "draft" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-blue-600 hover:text-blue-800"
-                                onClick={() => router.push(`/edit-nota/${nota._id}`)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-800"
+                              onClick={() => router.push(`/edit-nota/${nota._id}`)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"

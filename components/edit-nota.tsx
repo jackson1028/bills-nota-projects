@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Printer, X } from "lucide-react"
@@ -11,11 +13,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
 
+// Update the LineItem interface
 interface LineItem {
   id: number
   name: string
   qty: number
   price: number
+  unit: string
 }
 
 interface Customer {
@@ -23,6 +27,11 @@ interface Customer {
   name: string
   storeName: string
   requireHeaderNota?: boolean
+}
+
+interface Unit {
+  _id: string
+  name: string
 }
 
 interface Nota {
@@ -40,20 +49,25 @@ interface Nota {
 export function EditNota({ notaId }: { notaId: string }) {
   const [nota, setNota] = useState<Nota | null>(null)
   const [items, setItems] = useState<LineItem[]>([])
+  // Update the newItem state
   const [newItem, setNewItem] = useState({
     name: "",
     qty: 1,
     price: 0,
+    unit: "",
   })
 
   const [isMandarin, setIsMandarin] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<string>("")
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [units, setUnits] = useState<Unit[]>([])
   const [notaNumber, setNotaNumber] = useState("")
   const [notaDate, setNotaDate] = useState("")
   const [dueDate, setDueDate] = useState("")
   const [paymentStatus, setPaymentStatus] = useState<"lunas" | "belum lunas">("belum lunas")
   const [isLoading, setIsLoading] = useState(false)
+  // Add a warning message when editing a published nota
+  const [showPublishedWarning, setShowPublishedWarning] = useState(false)
 
   const router = useRouter()
   const { toast } = useToast()
@@ -101,12 +115,33 @@ export function EditNota({ notaId }: { notaId: string }) {
       }
     }
 
+    const fetchUnits = async () => {
+      try {
+        const response = await fetch("/api/units")
+        if (!response.ok) {
+          throw new Error("Failed to fetch units")
+        }
+        const data = await response.json()
+        setUnits(data)
+      } catch (error) {
+        console.error("Error fetching units:", error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch units",
+        })
+      }
+    }
+
     fetchNota()
     fetchCustomers()
+    fetchUnits()
   }, [notaId, toast])
 
-  const addNewItem = () => {
-    if (!newItem.name || newItem.qty <= 0) {
+  // In the addNewItem function, make sure to include the unit
+  const addNewItem = (e?: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e && e.key !== "Enter") return
+    if (!newItem.name || newItem.qty <= 0 || !newItem.unit) {
       return
     }
 
@@ -117,6 +152,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         name: newItem.name,
         qty: newItem.qty,
         price: newItem.price,
+        unit: newItem.unit,
       },
     ])
 
@@ -125,6 +161,7 @@ export function EditNota({ notaId }: { notaId: string }) {
       name: "",
       qty: 1,
       price: 0,
+      unit: "",
     })
   }
 
@@ -250,6 +287,212 @@ export function EditNota({ notaId }: { notaId: string }) {
     }
   }
 
+  const handlePrint = () => {
+    const printWindow = window.open("", "_blank")
+    if (printWindow) {
+      const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
+      const showHeader = selectedCustomerObj?.requireHeaderNota !== false
+      const isA5 = items.length <= 10
+      const pageSize = isA5 ? "A5" : "A4"
+      const pageWidth = isA5 ? 148 : 210
+      const pageHeight = isA5 ? 210 : 297
+      const itemsPerPage = isA5 ? 10 : 25
+
+      const pageCount = Math.ceil(items.length / itemsPerPage)
+
+      let printContent = ""
+      for (let page = 0; page < pageCount; page++) {
+        const startIndex = page * itemsPerPage
+        const endIndex = Math.min((page + 1) * itemsPerPage, items.length)
+        const pageItems = items.slice(startIndex, endIndex)
+
+        if (pageItems.length === 0) continue
+
+        printContent += `
+    <div class="page ${pageSize}">
+      ${
+        showHeader
+          ? `
+          <div class="header">
+            <h1>Toko Yanto</h1>
+            <p>
+              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
+              Pasar Mitra Raya Block B No. 05, Batam Centre<br>
+              Hp 082284228888
+            </p>
+          </div>
+        `
+          : ""
+      }
+      <table class="info-table">
+        <tr>
+          <td><strong>Kepada:</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"}</td>
+          <td><strong>Nomor Nota:</strong> ${notaNumber}</td>
+        </tr>
+        <tr>
+          <td><strong>Tanggal Nota:</strong> ${notaDate}</td>
+          <td><strong>Jatuh Tempo:</strong> ${dueDate || "-"}</td>
+        </tr>
+      </table>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th></th>
+            <th>Nama Barang</th>
+            <th>Qty</th>
+            <th>Harga</th>
+            <th>Jumlah</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageItems
+            .map(
+              (item, index) => `
+            <tr>
+              <td>${startIndex + index + 1}</td>
+              <td><div class="checkbox"></div></td>
+              <td>${item.name}</td>
+              <td>${item.qty} ${item.unit}</td>
+              <td>Rp${item.price.toLocaleString()}</td>
+              <td>Rp${(item.qty * item.price).toLocaleString()}</td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+      ${
+        page === pageCount - 1
+          ? `
+          <table class="total-table">
+            <tr>
+              <td colspan="5" class="text-right"><strong>Total:</strong></td>
+              <td><strong>Rp${total.toLocaleString()}</strong></td>
+            </tr>
+          </table>
+          <p><strong>Status Pembayaran:</strong> ${paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
+          <div class="signature-section">
+            <div class="signature-box">
+              <p>Dibuat Oleh</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
+            </div>
+            <div class="signature-box">
+              <p>Pengantar</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
+            </div>
+            <div class="signature-box">
+              <p>Penerima</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
+            </div>
+          </div>
+        `
+          : ""
+      }
+      ${pageCount > 1 ? `<div class="page-number">Halaman ${page + 1} dari ${pageCount}</div>` : ""}
+    </div>
+  `
+      }
+
+      printWindow.document.write(`
+  <html>
+    <head>
+      <title>Print Nota</title>
+      <style>
+        @page {
+          size: ${pageSize};
+          margin: 0;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          font-size: 8pt;
+        }
+        .page {
+          width: ${pageWidth}mm;
+          height: ${pageHeight}mm;
+          padding: 10mm;
+          box-sizing: border-box;
+          page-break-after: always;
+        }
+        .header {
+          margin-bottom: 5mm;
+        }
+        .header h1 {
+          margin: 0 0 2mm 0;
+          font-size: 12pt;
+        }
+        .header p {
+          margin: 0;
+          line-height: 1.2;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 3mm;
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 1mm;
+          text-align: left;
+          font-size: 7pt;
+        }
+        th {
+          background-color: #f2f2f2;
+          font-weight: normal;
+        }
+        .info-table td {
+          border: none;
+          padding: 1mm 0;
+        }
+        .items-table th, .items-table td {
+          padding: 0.5mm;
+        }
+        .total-table {
+          margin-top: 2mm;
+        }
+        .checkbox {
+          width: 2mm;
+          height: 2mm;
+          border: 0.5pt solid black;
+          display: inline-block;
+        }
+        .signature-section {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 5mm;
+          font-size: 6pt;
+        }
+        .signature-box {
+          text-align: center;
+          width: 30%;
+        }
+        .signature-line {
+          border-top: 1px solid black;
+          margin-top: 10mm;
+          width: 100%;
+        }
+        .page-number {
+          text-align: center;
+          margin-top: 2mm;
+          font-size: 6pt;
+        }
+      </style>
+    </head>
+    <body>
+      ${printContent}
+    </body>
+  </html>
+`)
+      printWindow.document.close()
+      printWindow.print()
+    }
+  }
+
   const NotaPreview = ({ language }: { language: "id" | "zh" }) => {
     const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
     const showHeader = selectedCustomerObj?.requireHeaderNota !== false
@@ -281,7 +524,7 @@ export function EditNota({ notaId }: { notaId: string }) {
           </CardHeader>
         )}
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <div className="text-sm text-muted-foreground">{language === "id" ? "Customer" : "客户"}</div>
               <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
@@ -312,7 +555,9 @@ export function EditNota({ notaId }: { notaId: string }) {
                       <div className="border border-gray-300 w-4 h-4"></div>
                     </td>
                     <td className="py-2">{item.name}</td>
-                    <td className="py-2">{item.qty}</td>
+                    <td className="py-2">
+                      {item.qty} {item.unit}
+                    </td>
                     <td className="py-2">Rp{item.price.toLocaleString()}</td>
                     <td className="py-2 text-right">Rp{(item.qty * item.price).toLocaleString()}</td>
                   </tr>
@@ -334,7 +579,7 @@ export function EditNota({ notaId }: { notaId: string }) {
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{language === "id" ? "Jatuh Tempo" : "到期日"}</div>
-              <div>{dueDate || "Not set"}</div>
+              <div>{dueDate || "-"}</div>
             </div>
           </div>
           <div>
@@ -369,110 +614,11 @@ export function EditNota({ notaId }: { notaId: string }) {
     )
   }
 
-  const handlePrint = () => {
-    const printWindow = window.open("", "_blank")
-    if (printWindow) {
-      const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
-      const showHeader = selectedCustomerObj?.requireHeaderNota !== false
-      printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print Nota</title>
-          <style>
-            body { font-family: Arial, sans-serif; }
-            .nota-container { max-width: 800px; margin: 0 auto; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
-            .signature-box { text-align: center; width: 30%; }
-            .signature-line { border-top: 1px solid black; margin-top: 50px; }
-            ${!showHeader ? ".nota-container { padding-top: 40px; }" : ""}
-          </style>
-        </head>
-        <body>
-          <div class="nota-container">
-            ${
-              showHeader
-                ? `
-              <h1>Toko Yanto</h1>
-              <p>
-                Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
-                Pasar Mitra Raya Block B No. 05, Batam Centre<br>
-                Hp 082284228888
-              </p>
-            `
-                : ""
-            }
-              <table>
-                <tr>
-                  <td><strong>Customer:</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"}</td>
-                  <td><strong>Nomor Nota:</strong> ${notaNumber}</td>
-                </tr>
-                <tr>
-                  <td><strong>Tanggal Nota:</strong> ${notaDate}</td>
-                  <td><strong>Jatuh Tempo:</strong> ${dueDate || "-"}</td>
-                </tr>
-              </table>
-              <table style="margin-top: 20px;">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th></th>
-                    <th>Nama Barang</th>
-                    <th>Qty</th>
-                    <th>Harga</th>
-                    <th>Jumlah</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${items
-                    .map(
-                      (item, index) => `
-                    <tr>
-                      <td>${index + 1}</td>
-                      <td><div style="width: 20px; height: 20px; border: 1px solid black;"></div></td>
-                      <td>${item.name}</td>
-                      <td>${item.qty}</td>
-                      <td>Rp${item.price.toLocaleString()}</td>
-                      <td>Rp${(item.qty * item.price).toLocaleString()}</td>
-                    </tr>
-                  `,
-                    )
-                    .join("")}
-                  <tr>
-                    <td colspan="5" style="text-align: right;"><strong>Total:</strong></td>
-                    <td><strong>Rp${total.toLocaleString()}</strong></td>
-                  </tr>
-                </tbody>
-              </table>
-              <p><strong>Status Pembayaran:</strong> ${paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
-              <div class="signature-section">
-                <div class="signature-box">
-                  <p>Dibuat Oleh</p>
-                  <div class="signature-line"></div>
-                  <p>(______________)</p>
-                </div>
-                <div class="signature-box">
-                  <p>Pengantar</p>
-                  <div class="signature-line"></div>
-                  <p>(______________)</p>
-                </div>
-                <div class="signature-box">
-                  <p>Penerima</p>
-                  <div class="signature-line"></div>
-                  <p>(______________)</p>
-                </div>
-              </div>
-            
-          </div>
-        </body>
-      </html>
-    `)
-      printWindow.document.close()
-      printWindow.print()
+  useEffect(() => {
+    if (nota && nota.status === "published") {
+      setShowPublishedWarning(true)
     }
-  }
+  }, [nota])
 
   if (!nota) {
     return <div>Loading...</div>
@@ -491,6 +637,12 @@ export function EditNota({ notaId }: { notaId: string }) {
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Left Column - Nota Details */}
           <div className="space-y-6">
+            {showPublishedWarning && (
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+                <p className="font-bold">Warning</p>
+                <p>You are editing a published nota. Changes may affect existing records.</p>
+              </div>
+            )}
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Nota Details</h2>
 
@@ -559,6 +711,7 @@ export function EditNota({ notaId }: { notaId: string }) {
                       <th className="text-left p-3 text-sm">#</th>
                       <th className="text-left p-3 text-sm">Nama Barang</th>
                       <th className="text-left p-3 text-sm">Qty</th>
+                      <th className="text-left p-3 text-sm">Satuan</th>
                       <th className="text-left p-3 text-sm">Harga</th>
                       <th className="text-left p-3 text-sm">Actions</th>
                     </tr>
@@ -569,6 +722,7 @@ export function EditNota({ notaId }: { notaId: string }) {
                         <td className="p-3">{index + 1}</td>
                         <td className="p-3">{item.name}</td>
                         <td className="p-3">{item.qty}</td>
+                        <td className="p-3">{item.unit}</td>
                         <td className="p-3">Rp{item.price.toLocaleString()}</td>
                         <td className="p-3">
                           <Button
@@ -587,13 +741,14 @@ export function EditNota({ notaId }: { notaId: string }) {
               </div>
 
               <div className="space-y-4 p-4 border rounded-lg">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div className="space-y-2 sm:col-span-1">
                     <Label htmlFor="item-name">Nama Barang</Label>
                     <Input
                       id="item-name"
                       value={newItem.name}
                       onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                      onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addNewItem(e)}
                       placeholder="Masukkan nama barang"
                     />
                   </div>
@@ -605,7 +760,23 @@ export function EditNota({ notaId }: { notaId: string }) {
                       min="1"
                       value={newItem.qty}
                       onChange={(e) => setNewItem({ ...newItem, qty: Number.parseInt(e.target.value) || 0 })}
+                      onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addNewItem(e)}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="item-unit">Satuan</Label>
+                    <Select value={newItem.unit} onValueChange={(value) => setNewItem({ ...newItem, unit: value })}>
+                      <SelectTrigger id="item-unit">
+                        <SelectValue placeholder="Pilih satuan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {units.map((unit) => (
+                          <SelectItem key={unit._id} value={unit.name}>
+                            {unit.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="item-price">Harga</Label>
@@ -615,12 +786,13 @@ export function EditNota({ notaId }: { notaId: string }) {
                       min="0"
                       value={newItem.price}
                       onChange={(e) => setNewItem({ ...newItem, price: Number.parseInt(e.target.value) || 0 })}
+                      onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addNewItem(e)}
                       placeholder="Rp"
                     />
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={addNewItem} disabled={!newItem.name || newItem.qty <= 0}>
+                  <Button onClick={() => addNewItem()} disabled={!newItem.name || newItem.qty <= 0 || !newItem.unit}>
                     Add Item
                   </Button>
                 </div>

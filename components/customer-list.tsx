@@ -115,7 +115,7 @@ export function CustomerList() {
         title: "Success",
         description: "Customer created successfully",
       })
-      setIsCreateDialogOpen(false)
+      // The modal will be closed by the form component
     } catch (error) {
       console.error("Error creating customer:", error)
       toast({
@@ -162,7 +162,7 @@ export function CustomerList() {
                   <DialogHeader>
                     <DialogTitle>Tambah Customer Baru</DialogTitle>
                   </DialogHeader>
-                  <CreateCustomerForm onSubmit={handleCreateCustomer} />
+                  <CreateCustomerForm onSubmit={handleCreateCustomer} onClose={() => setIsCreateDialogOpen(false)} />
                 </DialogContent>
               </Dialog>
             </div>
@@ -288,9 +288,10 @@ export function CustomerList() {
 
 interface CreateCustomerFormProps {
   onSubmit: (customerData: Omit<Customer, "_id">) => void
+  onClose: () => void
 }
 
-function CreateCustomerForm({ onSubmit }: CreateCustomerFormProps) {
+function CreateCustomerForm({ onSubmit, onClose }: CreateCustomerFormProps) {
   const [name, setName] = useState("")
   const [storeName, setStoreName] = useState("")
   const [address, setAddress] = useState("")
@@ -298,9 +299,9 @@ function CreateCustomerForm({ onSubmit }: CreateCustomerFormProps) {
   const [notaCode, setNotaCode] = useState("")
   const [requireHeaderNota, setRequireHeaderNota] = useState(true)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ name, storeName, address, phone, notaCode, requireHeaderNota })
+    await onSubmit({ name, storeName, address, phone, notaCode, requireHeaderNota })
     // Reset form fields
     setName("")
     setStoreName("")
@@ -308,6 +309,7 @@ function CreateCustomerForm({ onSubmit }: CreateCustomerFormProps) {
     setPhone("")
     setNotaCode("")
     setRequireHeaderNota(true)
+    onClose() // Close the modal after submission
   }
 
   return (

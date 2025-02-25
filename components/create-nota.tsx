@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Printer, X, Search } from "lucide-react"
@@ -18,6 +20,7 @@ interface LineItem {
   name: string
   qty: number
   price: number
+  unit: string
 }
 
 interface Customer {
@@ -25,7 +28,12 @@ interface Customer {
   name: string
   storeName: string
   notaCode: string
-  requireHeaderNota: boolean // Add this line
+  requireHeaderNota: boolean
+}
+
+interface Unit {
+  _id: string
+  name: string
 }
 
 export function CreateNota() {
@@ -34,11 +42,13 @@ export function CreateNota() {
     name: "",
     qty: 1,
     price: 0,
+    unit: "",
   })
 
   const [isMandarin, setIsMandarin] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<string>("")
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [units, setUnits] = useState<Unit[]>([])
   const [notaNumber, setNotaNumber] = useState("")
   const [notaDate, setNotaDate] = useState(() => {
     const today = new Date()
@@ -71,11 +81,31 @@ export function CreateNota() {
       }
     }
 
+    const fetchUnits = async () => {
+      try {
+        const response = await fetch("/api/units")
+        if (!response.ok) {
+          throw new Error("Failed to fetch units")
+        }
+        const data = await response.json()
+        setUnits(data)
+      } catch (error) {
+        console.error("Error fetching units:", error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch units",
+        })
+      }
+    }
+
     fetchCustomers()
+    fetchUnits()
   }, [toast])
 
-  const addNewItem = () => {
-    if (!newItem.name || newItem.qty <= 0) {
+  const addNewItem = (e?: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e && e.key !== "Enter") return
+    if (!newItem.name || newItem.qty <= 0 || !newItem.unit) {
       return
     }
 
@@ -86,6 +116,7 @@ export function CreateNota() {
         name: newItem.name,
         qty: newItem.qty,
         price: newItem.price,
+        unit: newItem.unit,
       },
     ])
 
@@ -94,6 +125,7 @@ export function CreateNota() {
       name: "",
       qty: 1,
       price: 0,
+      unit: "",
     })
   }
 
@@ -234,100 +266,202 @@ export function CreateNota() {
     if (printWindow) {
       const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
       const showHeader = selectedCustomerObj?.requireHeaderNota !== false
-      printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print Nota</title>
-          <style>
-            body { font-family: Arial, sans-serif; }
-            .nota-container { max-width: 800px; margin: 0 auto; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
-            .signature-box { text-align: center; width: 30%; }
-            .signature-line { border-top: 1px solid black; margin-top: 50px; }
-            ${!showHeader ? ".nota-container { padding-top: 40px; }" : ""}
-          </style>
-        </head>
-        <body>
-          <div class="nota-container">
-            ${
-              showHeader
-                ? `
-              <h1>Toko Yanto</h1>
-              <p>
-                Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
-                Pasar Mitra Raya Block B No. 05, Batam Centre<br>
-                Hp 082284228888
-              </p>
-            `
-                : ""
-            }
-            <table>
-              <tr>
-                <td><strong>Kepada:</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"}</td>
-                <td><strong>Nomor Nota:</strong> ${notaNumber}</td>
-              </tr>
-              <tr>
-                <td><strong>Tanggal Nota:</strong> ${notaDate}</td>
-                <td><strong>Jatuh Tempo:</strong> ${dueDate || "-"}</td>
-              </tr>
-            </table>
-            <table style="margin-top: 20px;">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th></th>
-                  <th>Nama Barang</th>
-                  <th>Qty</th>
-                  <th>Harga</th>
-                  <th>Jumlah</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${items
-                  .map(
-                    (item, index) => `
-                    <tr>
-                      <td>${index + 1}</td>
-                      <td><div style="width: 20px; height: 20px; border: 1px solid black;"></div></td>
-                      <td>${item.name}</td>
-                      <td>${item.qty}</td>
-                      <td>Rp${item.price.toLocaleString()}</td>
-                      <td>Rp${(item.qty * item.price).toLocaleString()}</td>
-                    </tr>
-                  `,
-                  )
-                  .join("")}
-                <tr>
-                  <td colspan="5" style="text-align: right;"><strong>Total:</strong></td>
-                  <td><strong>Rp${total.toLocaleString()}</strong></td>
-                </tr>
-              </tbody>
-            </table>
-            <p><strong>Status Pembayaran:</strong> ${paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
-            <div class="signature-section">
-              <div class="signature-box">
-                <p>Dibuat Oleh</p>
-                <div class="signature-line"></div>
-                <p>(______________)</p>
-              </div>
-              <div class="signature-box">
-                <p>Pengantar</p>
-                <div class="signature-line"></div>
-                <p>(______________)</p>
-              </div>
-              <div class="signature-box">
-                <p>Penerima</p>
-                <div class="signature-line"></div>
-                <p>(______________)</p>
-              </div>
+      const isA5 = items.length <= 10
+      const pageSize = isA5 ? "A5" : "A4"
+      const pageWidth = isA5 ? 148 : 210
+      const pageHeight = isA5 ? 210 : 297
+      const itemsPerPage = isA5 ? 10 : 25
+
+      const pageCount = Math.ceil(items.length / itemsPerPage)
+
+      let printContent = ""
+      for (let page = 0; page < pageCount; page++) {
+        const startIndex = page * itemsPerPage
+        const endIndex = Math.min((page + 1) * itemsPerPage, items.length)
+        const pageItems = items.slice(startIndex, endIndex)
+
+        if (pageItems.length === 0) continue
+
+        printContent += `
+    <div class="page ${pageSize}">
+      ${
+        showHeader
+          ? `
+          <div class="header">
+            <h1>Toko Yanto</h1>
+            <p>
+              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
+              Pasar Mitra Raya Block B No. 05, Batam Centre<br>
+              Hp 082284228888
+            </p>
+          </div>
+        `
+          : ""
+      }
+      <table class="info-table">
+        <tr>
+          <td><strong>Kepada:</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"}</td>
+          <td><strong>Nomor Nota:</strong> ${notaNumber}</td>
+        </tr>
+        <tr>
+          <td><strong>Tanggal Nota:</strong> ${notaDate}</td>
+          <td><strong>Jatuh Tempo:</strong> ${dueDate || "-"}</td>
+        </tr>
+      </table>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th></th>
+            <th>Nama Barang</th>
+            <th>Qty</th>
+            <th>Harga</th>
+            <th>Jumlah</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageItems
+            .map(
+              (item, index) => `
+            <tr>
+              <td>${startIndex + index + 1}</td>
+              <td><div class="checkbox"></div></td>
+              <td>${item.name}</td>
+              <td>${item.qty} ${item.unit}</td>
+              <td>Rp${item.price.toLocaleString()}</td>
+              <td>Rp${(item.qty * item.price).toLocaleString()}</td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+      ${
+        page === pageCount - 1
+          ? `
+          <table class="total-table">
+            <tr>
+              <td colspan="5" class="text-right"><strong>Total:</strong></td>
+              <td><strong>Rp${total.toLocaleString()}</strong></td>
+            </tr>
+          </table>
+          <p><strong>Status Pembayaran:</strong> ${paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
+          <div class="signature-section">
+            <div class="signature-box">
+              <p>Dibuat Oleh</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
+            </div>
+            <div class="signature-box">
+              <p>Pengantar</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
+            </div>
+            <div class="signature-box">
+              <p>Penerima</p>
+              <div class="signature-line"></div>
+              <p>(______________)</p>
             </div>
           </div>
-        </body>
-      </html>
-    `)
+        `
+          : ""
+      }
+      ${pageCount > 1 ? `<div class="page-number">Halaman ${page + 1} dari ${pageCount}</div>` : ""}
+    </div>
+  `
+      }
+
+      printWindow.document.write(`
+  <html>
+    <head>
+      <title>Print Nota</title>
+      <style>
+        @page {
+          size: ${pageSize};
+          margin: 0;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          font-size: 8pt;
+        }
+        .page {
+          width: ${pageWidth}mm;
+          height: ${pageHeight}mm;
+          padding: 10mm;
+          box-sizing: border-box;
+          page-break-after: always;
+        }
+        .header {
+          margin-bottom: 5mm;
+        }
+        .header h1 {
+          margin: 0 0 2mm 0;
+          font-size: 12pt;
+        }
+        .header p {
+          margin: 0;
+          line-height: 1.2;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 3mm;
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 1mm;
+          text-align: left;
+          font-size: 7pt;
+        }
+        th {
+          background-color: #f2f2f2;
+          font-weight: normal;
+        }
+        .info-table td {
+          border: none;
+          padding: 1mm 0;
+        }
+        .items-table th, .items-table td {
+          padding: 0.5mm;
+        }
+        .total-table {
+          margin-top: 2mm;
+        }
+        .checkbox {
+          width: 2mm;
+          height: 2mm;
+          border: 0.5pt solid black;
+          display: inline-block;
+        }
+        .signature-section {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 5mm;
+          font-size: 6pt;
+        }
+        .signature-box {
+          text-align: center;
+          width: 30%;
+        }
+        .signature-line {
+          border-top: 1px solid black;
+          margin-top: 10mm;
+          width: 100%;
+        }
+        .page-number {
+          text-align: center;
+          margin-top: 2mm;
+          font-size: 6pt;
+        }
+      </style>
+    </head>
+    <body>
+      ${printContent}
+    </body>
+  </html>
+`)
       printWindow.document.close()
       printWindow.print()
     }
@@ -399,7 +533,9 @@ export function CreateNota() {
                       <div className="border border-gray-300 w-4 h-4"></div>
                     </td>
                     <td className="py-2">{item.name}</td>
-                    <td className="py-2">{item.qty}</td>
+                    <td className="py-2">
+                      {item.qty} {item.unit}
+                    </td>
                     <td className="py-2">Rp{item.price.toLocaleString()}</td>
                     <td className="py-2 text-right">Rp{(item.qty * item.price).toLocaleString()}</td>
                   </tr>
@@ -415,10 +551,6 @@ export function CreateNota() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* <div>
-              <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
-              <div>{notaDate || "Not set"}</div>
-            </div> */}
             {dueDate && (
               <div>
                 <div className="text-sm text-muted-foreground">{language === "id" ? "Jatuh Tempo" : "到期日"}</div>
@@ -463,9 +595,6 @@ export function CreateNota() {
       <div className="flex-grow container mx-auto p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
           <h1 className="text-xl font-semibold mb-4 sm:mb-0">Buat Nota</h1>
-          {/* <Button variant="ghost" className="text-muted-foreground">
-            Do you need help? <X className="ml-2 h-4 w-4" />
-          </Button> */}
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -566,6 +695,7 @@ export function CreateNota() {
                       <th className="text-left p-3 text-sm">#</th>
                       <th className="text-left p-3 text-sm">Nama Barang</th>
                       <th className="text-left p-3 text-sm">Qty</th>
+                      <th className="text-left p-3 text-sm">Satuan</th>
                       <th className="text-left p-3 text-sm">Harga</th>
                       <th className="text-left p-3 text-sm">Actions</th>
                     </tr>
@@ -576,6 +706,7 @@ export function CreateNota() {
                         <td className="p-3">{index + 1}</td>
                         <td className="p-3">{item.name}</td>
                         <td className="p-3">{item.qty}</td>
+                        <td className="p-3">{item.unit}</td>
                         <td className="p-3">Rp{item.price.toLocaleString()}</td>
                         <td className="p-3">
                           <Button
@@ -594,13 +725,14 @@ export function CreateNota() {
               </div>
 
               <div className="space-y-4 p-4 border rounded-lg">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div className="space-y-2 sm:col-span-1">
                     <Label htmlFor="item-name">Nama Barang</Label>
                     <Input
                       id="item-name"
                       value={newItem.name}
                       onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                      onKeyPress={(e) => e.key === "Enter" && addNewItem()}
                       placeholder="Masukkan nama barang"
                     />
                   </div>
@@ -612,7 +744,23 @@ export function CreateNota() {
                       min="1"
                       value={newItem.qty}
                       onChange={(e) => setNewItem({ ...newItem, qty: Number.parseInt(e.target.value) || 0 })}
+                      onKeyPress={(e) => e.key === "Enter" && addNewItem()}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="item-unit">Satuan</Label>
+                    <Select value={newItem.unit} onValueChange={(value) => setNewItem({ ...newItem, unit: value })}>
+                      <SelectTrigger id="item-unit">
+                        <SelectValue placeholder="Pilih satuan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {units.map((unit) => (
+                          <SelectItem key={unit._id} value={unit.name}>
+                            {unit.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="item-price">Harga</Label>
@@ -622,12 +770,13 @@ export function CreateNota() {
                       min="0"
                       value={newItem.price}
                       onChange={(e) => setNewItem({ ...newItem, price: Number.parseInt(e.target.value) || 0 })}
+                      onKeyPress={(e) => e.key === "Enter" && addNewItem()}
                       placeholder="Rp"
                     />
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={addNewItem} disabled={!newItem.name || newItem.qty <= 0}>
+                  <Button onClick={() => addNewItem()} disabled={!newItem.name || newItem.qty <= 0 || !newItem.unit}>
                     Add Item
                   </Button>
                 </div>

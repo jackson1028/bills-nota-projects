@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { FileText, Users, Settings, LayoutDashboard, Menu } from "lucide-react"
+import { FileText, Users, Settings, LayoutDashboard, Menu, Ruler } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -45,6 +45,14 @@ export function AppSidebar() {
               <Link href="/customer" className="flex items-center">
                 <Users className="mr-2 h-4 w-4" />
                 <span>Customer</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/units"}>
+              <Link href="/units" className="flex items-center">
+                <Ruler className="mr-2 h-4 w-4" />
+                <span>Units</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

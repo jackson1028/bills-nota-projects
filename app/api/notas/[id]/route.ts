@@ -34,25 +34,26 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Nota not found" }, { status: 404 })
     }
 
-    if (existingNota.status !== "draft") {
-      return NextResponse.json({ error: "Only draft notas can be edited" }, { status: 400 })
-    }
+    // Remove this condition
+    // if (existingNota.status !== "draft") {
+    //   return NextResponse.json({ error: "Only draft notas can be edited" }, { status: 400 })
+    // }
 
+    // In the PUT function, update the updateData object
+    // Add a new field to track edits on published notas
     const updateData = {
       ...body,
       updatedAt: new Date(),
-    }
-
-    if (body.customerId) {
-      updateData.customerId = new ObjectId(body.customerId)
-    }
-
-    if (body.notaDate) {
-      updateData.notaDate = new Date(body.notaDate)
-    }
-
-    if (body.dueDate) {
-      updateData.dueDate = new Date(body.dueDate)
+      customerId: new ObjectId(body.customerId),
+      notaDate: new Date(body.notaDate),
+      dueDate: body.dueDate ? new Date(body.dueDate) : null,
+      items: body.items.map((item: any) => ({
+        ...item,
+        qty: Number(item.qty),
+        price: Number(item.price),
+        unit: item.unit || "",
+      })),
+      lastEditedAt: existingNota.status === "published" ? new Date() : undefined,
     }
 
     const result = await db.collection("notas").updateOne({ _id: new ObjectId(params.id) }, { $set: updateData })

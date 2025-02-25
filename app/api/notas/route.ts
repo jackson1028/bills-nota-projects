@@ -97,6 +97,12 @@ export async function POST(request: Request) {
       dueDate: body.dueDate ? new Date(body.dueDate) : null,
       status: body.status || "draft",
       paymentStatus: body.paymentStatus || "belum lunas",
+      items: body.items.map((item: any) => ({
+        ...item,
+        qty: Number(item.qty),
+        price: Number(item.price),
+        unit: item.unit || "", // Add this line to include the unit
+      })),
     }
 
     const result = await db.collection("notas").insertOne(newNota)

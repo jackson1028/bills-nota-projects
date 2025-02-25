@@ -35,6 +35,9 @@ export function Navbar() {
           <Link href="/customer" className="hover:text-gray-600">
             Customer
           </Link>
+          <Link href="/units" className="hover:text-gray-600">
+            Units
+          </Link>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
