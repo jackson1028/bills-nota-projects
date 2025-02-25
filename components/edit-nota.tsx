@@ -640,7 +640,7 @@ export function EditNota({ notaId }: { notaId: string }) {
             {showPublishedWarning && (
               <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
                 <p className="font-bold">Warning</p>
-                <p>You are editing a published nota. Changes may affect existing records.</p>
+                <p>Anda sedang meng-edit nota yang telah diterbitkan. Perubahan dapat memengaruhi catatan yang ada.</p>
               </div>
             )}
             <div className="space-y-4">

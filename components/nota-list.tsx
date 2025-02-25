@@ -437,6 +437,81 @@ export function NotaList() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+              <div className="flex space-x-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] justify-start text-left font-normal",
+                          !createdAtRange?.from && !createdAtRange?.to && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+
+                        {createdAtRange?.from && createdAtRange.from ? (
+                          createdAtRange.to ? (
+                            <>
+                              {format(createdAtRange?.from, "LLL dd, y")} - {format(createdAtRange.to, "LLL dd, y")}
+                            </>
+                          ) : (
+                            format(createdAtRange?.from, "LLL dd, y")
+                          )
+                        ) : (
+                          <span>Tanggal Dibuat</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={createdAtRange?.from}
+                        selected={createdAtRange}
+                        onSelect={setCreatedAtRange}
+                        numberOfMonths={2}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex space-x-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] justify-start text-left font-normal",
+                          !notaDateRange?.from && !notaDateRange?.to && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+
+                        {notaDateRange?.from && notaDateRange.from ? (
+                          notaDateRange.to ? (
+                            <>
+                              {format(notaDateRange?.from, "LLL dd, y")} - {format(notaDateRange.to, "LLL dd, y")}
+                            </>
+                          ) : (
+                            format(notaDateRange?.from, "LLL dd, y")
+                          )
+                        ) : (
+                          <span>Tanggal Nota</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={notaDateRange?.from}
+                        selected={notaDateRange}
+                        onSelect={setNotaDateRange}
+                        numberOfMonths={2}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+               
                 <Popover open={openCustomer} onOpenChange={setOpenCustomer}>
                   <PopoverTrigger asChild>
                     <Button
@@ -481,80 +556,7 @@ export function NotaList() {
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <div className="flex space-x-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[240px] justify-start text-left font-normal",
-                          !notaDateRange?.from && !notaDateRange?.to && "text-muted-foreground",
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-
-                        {notaDateRange?.from && notaDateRange.from ? (
-                          notaDateRange.to ? (
-                            <>
-                              {format(notaDateRange?.from, "LLL dd, y")} - {format(notaDateRange.to, "LLL dd, y")}
-                            </>
-                          ) : (
-                            format(notaDateRange?.from, "LLL dd, y")
-                          )
-                        ) : (
-                          <span>Tanggal Nota</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={notaDateRange?.from}
-                        selected={notaDateRange}
-                        onSelect={setNotaDateRange}
-                        numberOfMonths={2}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="flex space-x-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[240px] justify-start text-left font-normal",
-                          !createdAtRange?.from && !createdAtRange?.to && "text-muted-foreground",
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-
-                        {createdAtRange?.from && createdAtRange.from ? (
-                          createdAtRange.to ? (
-                            <>
-                              {format(createdAtRange?.from, "LLL dd, y")} - {format(createdAtRange.to, "LLL dd, y")}
-                            </>
-                          ) : (
-                            format(createdAtRange?.from, "LLL dd, y")
-                          )
-                        ) : (
-                          <span>Nota Dibuat</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={createdAtRange?.from}
-                        selected={createdAtRange}
-                        onSelect={setCreatedAtRange}
-                        numberOfMonths={2}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+               
                 <Select
                   value={paymentStatus}
                   onValueChange={(value) => setPaymentStatus(value as "all" | "lunas" | "belum lunas")}
@@ -595,19 +597,20 @@ export function NotaList() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
+                      <th className="text-left p-3 text-sm font-medium text-gray-600">Tanggal Dibuat</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-600">Tanggal Nota</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-600">Nomor Nota</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-600">Jumlah</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-600">Status</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-600">Status Pembayaran</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-600">Jatuh Tempo</th>
-                      <th className="text-left p-3 text-sm font-medium text-gray-600">Created At</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-600">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {notaData.map((nota) => (
                       <tr key={nota._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="p-3 text-sm text-gray-700">{new Date(nota.createdAt).toLocaleString()}</td>
                         <td className="p-3 text-sm text-gray-700">{new Date(nota.notaDate).toLocaleDateString()}</td>
                         <td className="p-3 text-sm text-gray-700">{nota.notaNumber}</td>
                         <td className="p-3 text-sm text-gray-700">Rp{nota.total.toLocaleString()}</td>
@@ -626,7 +629,6 @@ export function NotaList() {
                         <td className="p-3 text-sm text-gray-700">
                           {nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}
                         </td>
-                        <td className="p-3 text-sm text-gray-700">{new Date(nota.createdAt).toLocaleString()}</td>
                         <td className="p-3">
                           <div className="flex space-x-2">
                             <Button
