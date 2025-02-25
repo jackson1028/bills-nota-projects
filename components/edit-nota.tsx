@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
+
 
 // Update the LineItem interface
 interface LineItem {
@@ -70,7 +71,7 @@ export function EditNota({ notaId }: { notaId: string }) {
   const [showPublishedWarning, setShowPublishedWarning] = useState(false)
 
   const router = useRouter()
-  const { toast } = useToast()
+  
 
   useEffect(() => {
     const fetchNota = async () => {
@@ -89,9 +90,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         setPaymentStatus(data.paymentStatus)
       } catch (error) {
         console.error("Error fetching nota:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to fetch nota",
         })
       }
@@ -107,9 +106,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         setCustomers(data)
       } catch (error) {
         console.error("Error fetching customers:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to fetch customers",
         })
       }
@@ -125,9 +122,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         setUnits(data)
       } catch (error) {
         console.error("Error fetching units:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to fetch units",
         })
       }
@@ -173,18 +168,14 @@ export function EditNota({ notaId }: { notaId: string }) {
 
   const handleUpdateNota = async () => {
     if (!selectedCustomer) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Please select a customer",
       })
       return
     }
 
     if (!notaDate) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Please set the nota date",
       })
       return
@@ -215,8 +206,7 @@ export function EditNota({ notaId }: { notaId: string }) {
 
       const updatedNota = await response.json()
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Nota updated successfully",
       })
 
@@ -224,9 +214,7 @@ export function EditNota({ notaId }: { notaId: string }) {
       router.push("/nota")
     } catch (error) {
       console.error("Error updating nota:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to update nota",
       })
     } finally {
@@ -236,9 +224,7 @@ export function EditNota({ notaId }: { notaId: string }) {
 
   const handlePublishNota = async () => {
     if (total === 0) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Cannot publish a nota with a total price of 0",
       })
       return
@@ -268,8 +254,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         throw new Error("Failed to publish nota")
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Nota published successfully",
       })
 
@@ -277,9 +262,7 @@ export function EditNota({ notaId }: { notaId: string }) {
       router.push("/nota")
     } catch (error) {
       console.error("Error publishing nota:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to publish nota",
       })
     } finally {

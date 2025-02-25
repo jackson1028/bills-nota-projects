@@ -6,7 +6,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
+
 
 interface Unit {
   _id: string
@@ -22,7 +23,7 @@ interface EditUnitProps {
 export function EditUnit({ unit, onUnitUpdated, onCancel }: EditUnitProps) {
   const [name, setName] = useState(unit.name)
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,17 +42,14 @@ export function EditUnit({ unit, onUnitUpdated, onCancel }: EditUnitProps) {
         throw new Error("Failed to update unit")
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Unit updated successfully",
       })
 
       onUnitUpdated()
     } catch (error) {
       console.error("Error updating unit:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to update unit",
       })
     } finally {

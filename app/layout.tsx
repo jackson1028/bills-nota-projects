@@ -1,5 +1,6 @@
 import type React from "react"
 import { AuthenticatedLayout } from "@/components/authenticated-layout"
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
   children,
@@ -10,6 +11,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthenticatedLayout>{children}</AuthenticatedLayout>
+        <Toaster/>
       </body>
     </html>
   )

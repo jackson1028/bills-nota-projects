@@ -7,13 +7,14 @@ import { Trash2, Plus, ChevronLeft, ChevronRight, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EditCustomer } from "@/components/edit-customer"
 import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from "sonner"
 
 interface Customer {
   _id: string
@@ -23,7 +24,7 @@ interface Customer {
   phone?: string
   notaCode: string
   tags?: string[]
-  requireHeaderNota?: boolean
+  requireHeaderNota?: boolean | undefined
 }
 
 export function CustomerList() {
@@ -32,7 +33,7 @@ export function CustomerList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState<"all" | "active">("all")
-  const { toast } = useToast()
+  
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [itemsPerPage, setItemsPerPage] = useState(5)
@@ -58,9 +59,7 @@ export function CustomerList() {
       setCustomers(data)
     } catch (error) {
       console.error("Error fetching customers:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to fetch customers",
       })
     } finally {
@@ -80,14 +79,11 @@ export function CustomerList() {
       }
 
       await fetchCustomers()
-      toast({
-        title: "Success",
+      toast("Success", {
         description: "Customer deleted successfully",
       })
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to delete customer",
       })
     } finally {
@@ -111,16 +107,13 @@ export function CustomerList() {
       }
 
       await fetchCustomers()
-      toast({
-        title: "Success",
+      toast("Success", {
         description: "Customer created successfully",
       })
       // The modal will be closed by the form component
     } catch (error) {
       console.error("Error creating customer:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to create customer",
       })
     } finally {

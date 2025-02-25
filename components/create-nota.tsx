@@ -11,9 +11,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/components/ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { toast } from "sonner"
 
 interface LineItem {
   id: number
@@ -60,7 +60,7 @@ export function CreateNota() {
   const [openCustomer, setOpenCustomer] = useState(false)
 
   const router = useRouter()
-  const { toast } = useToast()
+  
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -73,9 +73,7 @@ export function CreateNota() {
         setCustomers(data)
       } catch (error) {
         console.error("Error fetching customers:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to fetch customers",
         })
       }
@@ -91,9 +89,7 @@ export function CreateNota() {
         setUnits(data)
       } catch (error) {
         console.error("Error fetching units:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to fetch units",
         })
       }
@@ -148,9 +144,7 @@ export function CreateNota() {
         return `${customer.notaCode}${nextNumber.toString().padStart(4, "0")}`
       } catch (error) {
         console.error("Error generating nota number:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to generate nota number",
         })
       }
@@ -178,27 +172,21 @@ export function CreateNota() {
 
   const handleCreateNota = async (status: "draft" | "published") => {
     if (!selectedCustomer) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Please select a customer",
       })
       return
     }
 
     if (!notaDate) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Please set the nota date",
       })
       return
     }
 
     if (status === "published" && total === 0) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Cannot publish a nota with a total price of 0",
       })
       return
@@ -215,6 +203,7 @@ export function CreateNota() {
         status,
         notaDate,
         paymentStatus,
+        dueDate: ""
       }
 
       if (dueDate) {
@@ -242,8 +231,7 @@ export function CreateNota() {
         await updateLastNotaNumber(customer.notaCode, newNumber)
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: `Nota ${status === "draft" ? "saved as draft" : "published"} successfully`,
       })
 
@@ -251,9 +239,7 @@ export function CreateNota() {
       router.push("/nota")
     } catch (error) {
       console.error("Error creating nota:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to create nota",
       })
     } finally {

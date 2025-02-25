@@ -15,9 +15,9 @@ import { format } from "date-fns"
 import Link from "next/link"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
 import debounce from "lodash/debounce"
+import { toast } from "sonner";
 
 interface Nota {
   _id: string
@@ -54,12 +54,12 @@ export function NotaList() {
   const [totalItems, setTotalItems] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(5)
   const [customers, setCustomers] = useState<Customer[]>([])
-  const { toast } = useToast()
-  const [createdAtRange, setCreatedAtRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  type DateRange = { from: Date | undefined; to?: Date | undefined };
+  const [createdAtRange, setCreatedAtRange] = useState<DateRange>({
     from: undefined,
     to: undefined,
   })
-  const [notaDateRange, setNotaDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [notaDateRange, setNotaDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined,
   })
@@ -110,9 +110,7 @@ export function NotaList() {
       setTotalItems(data.totalItems)
     } catch (error) {
       console.error("Error fetching notas:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to fetch notas",
       })
     } finally {
@@ -141,9 +139,7 @@ export function NotaList() {
         setCustomers(data)
       } catch (error) {
         console.error("Error fetching customers:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to fetch customers",
         })
       }
@@ -171,17 +167,14 @@ export function NotaList() {
         throw new Error("Failed to delete nota")
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success",{
         description: "Nota deleted successfully",
       })
 
       fetchNotas()
     } catch (error) {
       console.error("Error deleting nota:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to delete nota",
       })
     }
@@ -427,7 +420,7 @@ export function NotaList() {
         </div>
 
         <Card className="shadow-md">
-          <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as "all" | "draft" | "published")}>
+          <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as "all" | "draft" | "terbit")}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="draft">Draft</TabsTrigger>
@@ -468,7 +461,11 @@ export function NotaList() {
                         mode="range"
                         defaultMonth={createdAtRange?.from}
                         selected={createdAtRange}
-                        onSelect={setCreatedAtRange}
+                        onSelect={(range) => {
+                          if (range) {
+                            setNotaDateRange(range); // Hanya set state jika range tidak undefined
+                          }
+                        }}
                         numberOfMonths={2}
                       />
                     </PopoverContent>
@@ -505,7 +502,11 @@ export function NotaList() {
                         mode="range"
                         defaultMonth={notaDateRange?.from}
                         selected={notaDateRange}
-                        onSelect={setNotaDateRange}
+                        onSelect={(range) => {
+                          if (range) {
+                            setNotaDateRange(range); // Hanya set state jika range tidak undefined
+                          }
+                        }}
                         numberOfMonths={2}
                       />
                     </PopoverContent>
@@ -620,7 +621,7 @@ export function NotaList() {
                           </Badge>
                         </td>
                         <td className="p-3">
-                          <Badge variant={nota.paymentStatus === "lunas" ? "success" : "warning"}>
+                          <Badge variant={nota.paymentStatus === "lunas" ? "default" : "destructive"}>
                             {nota.paymentStatus
                               ? nota.paymentStatus.charAt(0).toUpperCase() + nota.paymentStatus.slice(1)
                               : "N/A"}

@@ -5,10 +5,11 @@ import { Pencil, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { CreateUnit } from "@/components/create-unit"
 import { EditUnit } from "@/components/edit-unit"
+import { toast } from "sonner"
 
 interface Unit {
   _id: string
@@ -21,7 +22,7 @@ export function UnitList() {
   const [isLoading, setIsLoading] = useState(false)
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const { toast } = useToast()
+  
 
   const fetchUnits = useCallback(async () => {
     setIsLoading(true)
@@ -34,9 +35,7 @@ export function UnitList() {
       setUnits(data)
     } catch (error) {
       console.error("Error fetching units:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to fetch units",
       })
     } finally {
@@ -58,17 +57,14 @@ export function UnitList() {
         throw new Error("Failed to delete unit")
       }
 
-      toast({
-        title: "Success",
+      toast.error("Success", {
         description: "Unit deleted successfully",
       })
 
       fetchUnits()
     } catch (error) {
       console.error("Error deleting unit:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to delete unit",
       })
     }

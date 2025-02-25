@@ -6,7 +6,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
+
 
 interface CreateUnitProps {
   onUnitCreated: () => void
@@ -16,7 +17,7 @@ interface CreateUnitProps {
 export function CreateUnit({ onUnitCreated, onClose }: CreateUnitProps) {
   const [name, setName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,8 +36,7 @@ export function CreateUnit({ onUnitCreated, onClose }: CreateUnitProps) {
         throw new Error("Failed to create unit")
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success",{
         description: "Unit created successfully",
       })
 
@@ -45,9 +45,7 @@ export function CreateUnit({ onUnitCreated, onClose }: CreateUnitProps) {
       onClose() // Added onClose call
     } catch (error) {
       console.error("Error creating unit:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to create unit",
       })
     } finally {

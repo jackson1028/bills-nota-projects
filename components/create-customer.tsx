@@ -6,8 +6,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+
 import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from "sonner"
 
 interface CreateCustomerProps {
   onCustomerCreated: () => void
@@ -21,7 +22,7 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
   const [notaCode, setNotaCode] = useState("")
   const [requireHeaderNota, setRequireHeaderNota] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,8 +48,7 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
         throw new Error("Failed to create customer")
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Customer created successfully",
       })
 
@@ -64,9 +64,7 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
       onCustomerCreated()
     } catch (error) {
       console.error("Error creating customer:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to create customer",
       })
     } finally {

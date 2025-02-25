@@ -6,8 +6,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+
 import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from "sonner"
 
 interface Customer {
   _id: string
@@ -16,7 +17,7 @@ interface Customer {
   address?: string
   phone?: string
   notaCode: string
-  requireHeaderNota: boolean
+  requireHeaderNota?: boolean
 }
 
 interface EditCustomerProps {
@@ -33,7 +34,7 @@ export function EditCustomer({ customer, onCustomerUpdated, onCancel }: EditCust
   const [notaCode, setNotaCode] = useState(customer.notaCode)
   const [requireHeaderNota, setRequireHeaderNota] = useState(customer.requireHeaderNota)
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,17 +60,14 @@ export function EditCustomer({ customer, onCustomerUpdated, onCancel }: EditCust
         throw new Error("Failed to update customer")
       }
 
-      toast({
-        title: "Sukses",
+      toast.success("Sukses", {
         description: "Data pelanggan berhasil diperbarui",
       })
 
       onCustomerUpdated()
     } catch (error) {
       console.error("Error updating customer:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Gagal memperbarui data pelanggan",
       })
     } finally {
