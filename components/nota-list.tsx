@@ -48,7 +48,7 @@ export function NotaList() {
   const [selectedCustomer, setSelectedCustomer] = useState("all")
   const [openCustomer, setOpenCustomer] = useState(false)
   const [notaData, setNotaData] = useState<Nota[]>([])
-  const [activeTab, setActiveTab] = useState<"all" | "draft" | "published">("all")
+  const [activeTab, setActiveTab] = useState<"all" | "draft" | "terbit">("all")
   const [paymentStatus, setPaymentStatus] = useState<"all" | "lunas" | "belum lunas">("all")
   const [isLoading, setIsLoading] = useState(false)
   const [totalItems, setTotalItems] = useState(0)

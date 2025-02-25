@@ -35,7 +35,7 @@ export function PrintableNota({
         <p className="text-sm text-muted-foreground">
           {language === "id" ? (
             <>
-              menjual: sayur - mayur, bakso-bakso & buah-buahan
+              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan
               <br />
               Pasar Mitra Raya Block B No 05, Batam Centre
               <br />
@@ -45,7 +45,7 @@ export function PrintableNota({
             <>
               销售：蔬菜、肉丸和水果
               <br />
-              巴淡岛中心Mitra Raya市场B座05号
+              Pasar Mitra Raya Block B No 05, Batam Centre
               <br />
               电话：082284228888
             </>
@@ -60,7 +60,7 @@ export function PrintableNota({
           </div>
           <div>
             <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
-            <div>{notaNumber}</div>
+            <div style={{ color: 'red' }}>{notaNumber}</div>
           </div>
         </div>
 

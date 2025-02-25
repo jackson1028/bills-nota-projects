@@ -530,8 +530,12 @@ export function EditNota({ notaId }: { notaId: string }) {
               <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
             </div>
             <div>
+              <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
+              <div>{notaDate || "Not set"}</div>
+            </div>
+            <div>
               <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
-              <div>{notaNumber || "Not set"}</div>
+              <div style={{ color: 'red' }}>{notaNumber || "Not set"}</div>
             </div>
           </div>
 
@@ -573,10 +577,7 @@ export function EditNota({ notaId }: { notaId: string }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
-              <div>{notaDate || "Not set"}</div>
-            </div>
+            
             <div>
               <div className="text-sm text-muted-foreground">{language === "id" ? "Jatuh Tempo" : "到期日"}</div>
               <div>{dueDate || "-"}</div>
@@ -585,13 +586,15 @@ export function EditNota({ notaId }: { notaId: string }) {
           <div>
             <div className="text-sm text-muted-foreground">{language === "id" ? "Status Pembayaran" : "支付状态"}</div>
             <div>
-              {paymentStatus === "lunas"
-                ? language === "id"
-                  ? "Lunas"
-                  : "已付款"
-                : language === "id"
-                  ? "Belum Lunas"
-                  : "未付款"}
+              {paymentStatus === "lunas" ? (
+                <span style={{ color: 'green' }}>
+                  {language === "id" ? "Lunas" : "已付款"}
+                </span>
+              ) : (
+                <span style={{ color: 'red' }}>
+                  {language === "id" ? "Belum Lunas" : "未付款"}
+                </span>
+              )}
             </div>
           </div>
 

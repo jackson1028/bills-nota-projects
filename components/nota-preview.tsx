@@ -32,7 +32,7 @@ export function NotaPreview({
         <p className="text-sm text-gray-600">
           {language === "id" ? (
             <>
-              menjual: sayur - mayur, bakso-bakso & buah-buahan
+              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan
               <br />
               Pasar Mitra Raya Block B No 05, Batam Centre
               <br />
@@ -42,7 +42,7 @@ export function NotaPreview({
             <>
               销售：蔬菜、肉丸和水果
               <br />
-              巴淡岛中心Mitra Raya市场B座05号
+              Pasar Mitra Raya Block B No 05, Batam Centre
               <br />
               电话：082284228888
             </>
@@ -57,7 +57,7 @@ export function NotaPreview({
         </div>
         <div>
           <p className="text-sm text-gray-600">{language === "id" ? "Nomor Nota" : "单据编号"}</p>
-          <p className="font-semibold">{notaNumber}</p>
+          <p className="font-semibold" style={{ color: 'red' }}>{notaNumber}</p>
         </div>
         <div>
           <p className="text-sm text-gray-600">{language === "id" ? "Tanggal Nota" : "单据日期"}</p>
