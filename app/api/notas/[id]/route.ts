@@ -53,7 +53,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         price: Number(item.price),
         unit: item.unit || "",
       })),
-      lastEditedAt: existingNota.status === "published" ? new Date() : undefined,
+      lastEditedAt: existingNota.status === "terbit" ? new Date() : undefined,
     }
 
     const result = await db.collection("notas").updateOne({ _id: new ObjectId(params.id) }, { $set: updateData })

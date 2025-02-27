@@ -60,7 +60,7 @@ export function CreateNota() {
   const [openCustomer, setOpenCustomer] = useState(false)
 
   const router = useRouter()
-  
+
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -170,7 +170,7 @@ export function CreateNota() {
     }
   }
 
-  const handleCreateNota = async (status: "draft" | "published") => {
+  const handleCreateNota = async (status: "draft" | "terbit") => {
     if (!selectedCustomer) {
       toast.error("Error", {
         description: "Please select a customer",
@@ -185,7 +185,7 @@ export function CreateNota() {
       return
     }
 
-    if (status === "published" && total === 0) {
+    if (status === "terbit" && total === 0) {
       toast.error("Error", {
         description: "Cannot publish a nota with a total price of 0",
       })
@@ -232,7 +232,7 @@ export function CreateNota() {
       }
 
       toast.success("Success", {
-        description: `Nota ${status === "draft" ? "saved as draft" : "published"} successfully`,
+        description: `Nota ${status === "draft" ? "saved as draft" : "terbit"} successfully`,
       })
 
       // Redirect to the nota list page
@@ -257,7 +257,6 @@ export function CreateNota() {
       const pageWidth = isA5 ? 148 : 210
       const pageHeight = isA5 ? 210 : 297
       const itemsPerPage = isA5 ? 10 : 25
-
       const pageCount = Math.ceil(items.length / itemsPerPage)
 
       let printContent = ""
@@ -269,43 +268,47 @@ export function CreateNota() {
         if (pageItems.length === 0) continue
 
         printContent += `
-    <div class="page ${pageSize}">
-      ${
-        showHeader
-          ? `
-          <div class="header">
-            <h1>Toko Yanto</h1>
-            <p>
-              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
-              Pasar Mitra Raya Block B No. 05, Batam Centre<br>
-              Hp 082284228888
-            </p>
-          </div>
-        `
-          : ""
-      }
-      <table class="info-table">
-        <tr>
-          <td><strong>Kepada:</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"}</td>
-          <td><strong>Nomor Nota:</strong> ${notaNumber}</td>
-        </tr>
-        <tr>
-          <td><strong>Tanggal Nota:</strong> ${notaDate}</td>
-          <td><strong>Jatuh Tempo:</strong> ${dueDate || "-"}</td>
-        </tr>
-      </table>
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th></th>
-            <th>Nama Barang</th>
-            <th>Qty</th>
-            <th>Harga</th>
-            <th>Jumlah</th>
-          </tr>
-        </thead>
-        <tbody>
+        <div class="page ${pageSize}">
+          ${showHeader
+            ? `
+                <div class="header">
+                  <h1>${isMandarin ? "燕涛商店" : "Toko Yanto"}</h1>
+                  <p>
+                    ${isMandarin
+              ? `销售：蔬菜、肉丸和水果<br>
+                           巴淡岛中心Mitra Raya市场B座05号<br>
+                           电话：082284228888`
+              : `Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
+                           Pasar Mitra Raya Block B No. 05, Batam Centre<br>
+                           Hp 082284228888`
+            }
+                  </p>
+                </div>`
+            : ""
+          }
+          <table class="info-table">
+            <tr>
+              <td><strong>${isMandarin ? "客户" : "Kepada:"}</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"
+          }</td>
+              <td><strong>${isMandarin ? "单据编号" : "Nomor Nota"}</strong> ${notaNumber}</td>
+            </tr>
+            <tr>
+              <td><strong>${isMandarin ? "单据日期" : "Tanggal Nota"}</strong> ${notaDate}</td>
+              <td><strong>${isMandarin ? "到期日" : "Jatuh Tempo"}</strong> ${dueDate || "-"}</td>
+            </tr>
+          </table>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th></th>
+                <th>${isMandarin ? "商品名称" : "Nama Barang"}</th>
+                <th>${isMandarin ? "数量" : "Qty"}</th>
+                <th>${isMandarin ? "价格" : "Harga"}</th>
+                <th>${isMandarin ? "金额" : "Jumlah"}</th>
+              </tr>
+            </thead>
+           <tbody>
           ${pageItems
             .map(
               (item, index) => `
@@ -321,40 +324,45 @@ export function CreateNota() {
             )
             .join("")}
         </tbody>
-      </table>
-      ${
-        page === pageCount - 1
-          ? `
-          <table class="total-table">
-            <tr>
-              <td colspan="5" class="text-right"><strong>Total:</strong></td>
-              <td><strong>Rp${total.toLocaleString()}</strong></td>
-            </tr>
           </table>
-          <p><strong>Status Pembayaran:</strong> ${paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
-          <div class="signature-section">
-            <div class="signature-box">
-              <p>Dibuat Oleh</p>
-              <div class="signature-line"></div>
-              <p>(______________)</p>
-            </div>
-            <div class="signature-box">
-              <p>Pengantar</p>
-              <div class="signature-line"></div>
-              <p>(______________)</p>
-            </div>
-            <div class="signature-box">
-              <p>Penerima</p>
-              <div class="signature-line"></div>
-              <p>(______________)</p>
-            </div>
-          </div>
-        `
-          : ""
-      }
-      ${pageCount > 1 ? `<div class="page-number">Halaman ${page + 1} dari ${pageCount}</div>` : ""}
-    </div>
-  `
+          ${page === pageCount - 1
+            ? `
+                <table class="total-table">
+                  <tr>
+                    <td colspan="5" class="text-right"><strong>${isMandarin ? "总计：" : "Total:"
+            }</strong></td>
+                    <td><strong>Rp${total.toLocaleString()}</strong></td>
+                  </tr>
+                </table>
+                <p><strong>${isMandarin ? "支付状态" : "Status Pembayaran"
+            }:</strong> ${paymentStatus === "lunas"
+              ? isMandarin
+                ? "已付款"
+                : "Lunas"
+              : isMandarin
+                ? "未付款"
+                : "Belum Lunas"
+            }</p>
+                <div class="signature-section">
+                  <div class="signature-box">
+                    <p>${isMandarin ? "制作人" : "Dibuat Oleh"}</p>
+                    <div class="signature-line"></div>
+                    <p>(______________)</p>
+                  </div>
+                  <div class="signature-box">
+                    <p>${isMandarin ? "送货员" : "Pengantar"}</p>
+                    <div class="signature-line"></div>
+                    <p>(______________)</p>
+                  </div>
+                  <div class="signature-box">
+                    <p>${isMandarin ? "收货人" : "Penerima"}</p>
+                    <div class="signature-line"></div>
+                    <p>(______________)</p>
+                  </div>
+                </div>`
+            : ""
+          }
+        </div>`;
       }
 
       printWindow.document.write(`
@@ -801,7 +809,7 @@ export function CreateNota() {
                 {isLoading ? "Saving..." : "Save as Draft"}
               </Button>
               <Button
-                onClick={() => handleCreateNota("published")}
+                onClick={() => handleCreateNota("terbit")}
                 disabled={isLoading || total === 0}
                 title={total === 0 ? "Cannot publish a nota with a total price of 0" : ""}
               >

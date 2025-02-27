@@ -25,7 +25,7 @@ interface Nota {
   notaDate: string
   notaNumber: string
   total: number
-  status: "draft" | "published"
+  status: "draft" | "terbit"
   paymentStatus: "lunas" | "belum lunas"
   dueDate?: string
   createdBy: string
@@ -52,7 +52,7 @@ export function NotaList() {
   const [paymentStatus, setPaymentStatus] = useState<"all" | "lunas" | "belum lunas">("all")
   const [isLoading, setIsLoading] = useState(false)
   const [totalItems, setTotalItems] = useState(0)
-  const [itemsPerPage, setItemsPerPage] = useState(5)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [customers, setCustomers] = useState<Customer[]>([])
   type DateRange = { from: Date | undefined; to?: Date | undefined };
   const [createdAtRange, setCreatedAtRange] = useState<DateRange>({
@@ -197,7 +197,7 @@ export function NotaList() {
       const pageSize = isA5 ? "A5" : "A4"
       const pageWidth = isA5 ? 148 : 210
       const pageHeight = isA5 ? 210 : 297
-      const itemsPerPage = isA5 ? 10 : 25
+      const itemsPerPage = isA5 ? 10 : 40
 
       const pageCount = Math.ceil((nota.items?.length || 0) / itemsPerPage)
 
@@ -441,7 +441,7 @@ export function NotaList() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="draft">Draft</TabsTrigger>
-              <TabsTrigger value="published">Terbit</TabsTrigger>
+              <TabsTrigger value="terbit">Terbit</TabsTrigger>
             </TabsList>
           </Tabs>
           <CardHeader>
@@ -633,7 +633,7 @@ export function NotaList() {
                         <td className="p-3 text-sm text-gray-700">{nota.notaNumber}</td>
                         <td className="p-3 text-sm text-gray-700">Rp{nota.total.toLocaleString()}</td>
                         <td className="p-3">
-                          <Badge variant={nota.status === "published" ? "default" : "secondary"}>
+                          <Badge variant={nota.status === "terbit" ? "default" : "secondary"}>
                             {nota.status ? nota.status.charAt(0).toUpperCase() + nota.status.slice(1) : "N/A"}
                           </Badge>
                         </td>
@@ -689,7 +689,6 @@ export function NotaList() {
                     <SelectValue placeholder={itemsPerPage} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
                     <SelectItem value="10">10</SelectItem>
                     <SelectItem value="20">20</SelectItem>
                     <SelectItem value="50">50</SelectItem>

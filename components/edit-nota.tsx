@@ -41,7 +41,7 @@ interface Nota {
   notaNumber: string
   items: LineItem[]
   total: number
-  status: "draft" | "published"
+  status: "draft" | "terbit"
   notaDate: string
   dueDate?: string
   paymentStatus: "lunas" | "belum lunas"
@@ -246,7 +246,7 @@ export function EditNota({ notaId }: { notaId: string }) {
           notaDate,
           dueDate,
           paymentStatus,
-          status: "published",
+          status: "terbit",
         }),
       })
 
@@ -291,93 +291,98 @@ export function EditNota({ notaId }: { notaId: string }) {
 
         if (pageItems.length === 0) continue
 
-        printContent += `
-    <div class="page ${pageSize}">
-      ${
-        showHeader
-          ? `
-          <div class="header">
-            <h1>Toko Yanto</h1>
-            <p>
-              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
-              Pasar Mitra Raya Block B No. 05, Batam Centre<br>
-              Hp 082284228888
-            </p>
-          </div>
-        `
-          : ""
-      }
-      <table class="info-table">
+       // Di dalam handlePrint
+printContent = `
+<div class="page ${pageSize}">
+  ${
+    showHeader
+      ? `
+      <div class="header">
+        <h1>${!isMandarin ? 'Toko Yanto' : '燕涛商店'}</h1>
+        <p>
+          ${
+            !isMandarin 
+              ? `Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
+                 Pasar Mitra Raya Block B No. 05, Batam Centre<br>
+                 Hp 082284228888`
+              : `销售：蔬菜、肉丸和水果<br>
+                 巴淡岛中心Mitra Raya市场B座05号<br>
+                 电话：082284228888`
+          }
+        </p>
+      </div>`
+      : ""
+  }
+  <table class="info-table">
+    <tr>
+      <td><strong>${!isMandarin ? 'Kepada:' : '客户：'}</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"}</td>
+      <td><strong>${!isMandarin ? 'Nomor Nota:' : '单据编号：'}</strong> ${notaNumber}</td>
+    </tr>
+    <tr>
+      <td><strong>${!isMandarin ? 'Tanggal Nota:' : '单据日期：'}</strong> ${notaDate}</td>
+      <td><strong>${!isMandarin ? 'Jatuh Tempo:' : '到期日：'}</strong> ${dueDate || "-"}</td>
+    </tr>
+  </table>
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th></th>
+        <th>${!isMandarin ? 'Nama Barang' : '商品名称'}</th>
+        <th>${!isMandarin ? 'Qty' : '数量'}</th>
+        <th>${!isMandarin ? 'Harga' : '价格'}</th>
+        <th>${!isMandarin ? 'Jumlah' : '金额'}</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${pageItems.map((item, index) => `
         <tr>
-          <td><strong>Kepada:</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"}</td>
-          <td><strong>Nomor Nota:</strong> ${notaNumber}</td>
+          <td>${startIndex + index + 1}</td>
+          <td><div class="checkbox"></div></td>
+          <td>${item.name}</td>
+          <td>${item.qty} ${item.unit}</td>
+          <td>Rp${item.price.toLocaleString()}</td>
+          <td>Rp${(item.qty * item.price).toLocaleString()}</td>
         </tr>
+      `).join("")}
+    </tbody>
+  </table>
+  ${
+    page === pageCount - 1
+      ? `
+      <table class="total-table">
         <tr>
-          <td><strong>Tanggal Nota:</strong> ${notaDate}</td>
-          <td><strong>Jatuh Tempo:</strong> ${dueDate || "-"}</td>
+          <td colspan="5" class="text-right"><strong>${!isMandarin ? 'Total:' : '总计：'}</strong></td>
+          <td><strong>Rp${total.toLocaleString()}</strong></td>
         </tr>
       </table>
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th></th>
-            <th>Nama Barang</th>
-            <th>Qty</th>
-            <th>Harga</th>
-            <th>Jumlah</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${pageItems
-            .map(
-              (item, index) => `
-            <tr>
-              <td>${startIndex + index + 1}</td>
-              <td><div class="checkbox"></div></td>
-              <td>${item.name}</td>
-              <td>${item.qty} ${item.unit}</td>
-              <td>Rp${item.price.toLocaleString()}</td>
-              <td>Rp${(item.qty * item.price).toLocaleString()}</td>
-            </tr>
-          `,
-            )
-            .join("")}
-        </tbody>
-      </table>
-      ${
-        page === pageCount - 1
-          ? `
-          <table class="total-table">
-            <tr>
-              <td colspan="5" class="text-right"><strong>Total:</strong></td>
-              <td><strong>Rp${total.toLocaleString()}</strong></td>
-            </tr>
-          </table>
-          <p><strong>Status Pembayaran:</strong> ${paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
-          <div class="signature-section">
-            <div class="signature-box">
-              <p>Dibuat Oleh</p>
-              <div class="signature-line"></div>
-              <p>(______________)</p>
-            </div>
-            <div class="signature-box">
-              <p>Pengantar</p>
-              <div class="signature-line"></div>
-              <p>(______________)</p>
-            </div>
-            <div class="signature-box">
-              <p>Penerima</p>
-              <div class="signature-line"></div>
-              <p>(______________)</p>
-            </div>
-          </div>
-        `
-          : ""
-      }
-      ${pageCount > 1 ? `<div class="page-number">Halaman ${page + 1} dari ${pageCount}</div>` : ""}
-    </div>
-  `
+      <p><strong>${!isMandarin ? 'Status Pembayaran:' : '支付状态：'}</strong> ${
+        paymentStatus === "lunas" 
+          ? (!isMandarin ? 'Lunas' : '已付款') 
+          : (!isMandarin ? 'Belum Lunas' : '未付款')
+      }</p>
+      <div class="signature-section">
+        <div class="signature-box">
+          <p>${!isMandarin ? 'Dibuat Oleh' : '制作人'}</p>
+          <div class="signature-line"></div>
+          <p>(______________)</p>
+        </div>
+        <div class="signature-box">
+          <p>${!isMandarin ? 'Pengantar' : '送货员'}</p>
+          <div class="signature-line"></div>
+          <p>(______________)</p>
+        </div>
+        <div class="signature-box">
+          <p>${!isMandarin ? 'Penerima' : '收货人'}</p>
+          <div class="signature-line"></div>
+          <p>(______________)</p>
+        </div>
+      </div>`
+      : ""
+  }
+  ${pageCount > 1 ? `<div class="page-number">${!isMandarin ? 'Halaman' : '页'} ${page + 1} ${!isMandarin ? 'dari' : '共'} ${pageCount}</div>` : ""}
+</div>
+`;
       }
 
       printWindow.document.write(`
@@ -601,7 +606,7 @@ export function EditNota({ notaId }: { notaId: string }) {
   }
 
   useEffect(() => {
-    if (nota && nota.status === "published") {
+    if (nota && nota.status === "terbit") {
       setShowPublishedWarning(true)
     }
   }, [nota])
