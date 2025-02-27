@@ -56,11 +56,11 @@ export function CreateNota() {
   })
   const [dueDate, setDueDate] = useState("")
   const [paymentStatus, setPaymentStatus] = useState<"lunas" | "belum lunas">("belum lunas")
+  const [includeSuratJalan, setIncludeSuratJalan] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [openCustomer, setOpenCustomer] = useState(false)
 
   const router = useRouter()
-
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -97,7 +97,7 @@ export function CreateNota() {
 
     fetchCustomers()
     fetchUnits()
-  }, [toast])
+  }, [])
 
   const addNewItem = (e?: React.KeyboardEvent<HTMLInputElement>) => {
     if (e && e.key !== "Enter") return
@@ -203,7 +203,7 @@ export function CreateNota() {
         status,
         notaDate,
         paymentStatus,
-        dueDate: ""
+        dueDate: "",
       }
 
       if (dueDate) {
@@ -248,18 +248,20 @@ export function CreateNota() {
   }
 
   const handlePrint = () => {
+    const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
+    const showHeader = selectedCustomerObj?.requireHeaderNota !== false
+    const isA5 = items.length <= 10
+    const pageSize = isA5 ? "A5" : "A4"
+    const pageWidth = isA5 ? 148 : 210
+    const pageHeight = isA5 ? 210 : 297
+    const itemsPerPage = isA5 ? 10 : 40
+    const pageCount = Math.ceil(items.length / itemsPerPage)
+
     const printWindow = window.open("", "_blank")
     if (printWindow) {
-      const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
-      const showHeader = selectedCustomerObj?.requireHeaderNota !== false
-      const isA5 = items.length <= 10
-      const pageSize = isA5 ? "A5" : "A4"
-      const pageWidth = isA5 ? 148 : 210
-      const pageHeight = isA5 ? 210 : 297
-      const itemsPerPage = isA5 ? 10 : 40
-      const pageCount = Math.ceil(items.length / itemsPerPage)
-
       let printContent = ""
+
+      // Nota content
       for (let page = 0; page < pageCount; page++) {
         const startIndex = page * itemsPerPage
         const endIndex = Math.min((page + 1) * itemsPerPage, items.length)
@@ -268,193 +270,262 @@ export function CreateNota() {
         if (pageItems.length === 0) continue
 
         printContent += `
-        <div class="page ${pageSize}">
-          ${showHeader
+      <div class="page ${pageSize}">
+        ${
+          showHeader
             ? `
-                <div class="header">
-                  <h1>${isMandarin ? "燕涛商店" : "Toko Yanto"}</h1>
-                  <p>
-                    ${isMandarin
-              ? `销售：蔬菜、肉丸和水果<br>
-                           巴淡岛中心Mitra Raya市场B座05号<br>
-                           电话：082284228888`
-              : `Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
-                           Pasar Mitra Raya Block B No. 05, Batam Centre<br>
-                           Hp 082284228888`
-            }
-                  </p>
-                </div>`
+              <div class="header">
+                <h1>${isMandarin ? "燕涛商店" : "Toko Yanto"}</h1>
+                <p>
+                  ${
+                    isMandarin
+                      ? `销售：蔬菜、肉丸和水果<br>
+                         巴淡岛中心Mitra Raya市场B座05号<br>
+                         电话：082284228888`
+                      : `Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
+                         Pasar Mitra Raya Block B No. 05, Batam Centre<br>
+                         Hp 082284228888`
+                  }
+                </p>
+              </div>`
             : ""
-          }
-          <table class="info-table">
+        }
+        <table class="info-table">
+          <tr>
+            <td><strong>${isMandarin ? "客户" : "Kepada:"}</strong> ${
+              selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"
+            }</td>
+            <td><strong>${isMandarin ? "单据编号" : "Nomor Nota"}</strong> ${notaNumber}</td>
+          </tr>
+          <tr>
+            <td><strong>${isMandarin ? "单据日期" : "Tanggal Nota"}</strong> ${notaDate}</td>
+            <td><strong>${isMandarin ? "到期日" : "Jatuh Tempo"}</strong> ${dueDate || "-"}</td>
+          </tr>
+        </table>
+        <table class="items-table">
+          <thead>
             <tr>
-              <td><strong>${isMandarin ? "客户" : "Kepada:"}</strong> ${selectedCustomerObj ? selectedCustomerObj.storeName : "Unknown"
-          }</td>
-              <td><strong>${isMandarin ? "单据编号" : "Nomor Nota"}</strong> ${notaNumber}</td>
+              <th>#</th>
+              <th></th>
+              <th>${isMandarin ? "商品名称" : "Nama Barang"}</th>
+              <th>${isMandarin ? "数量" : "Qty"}</th>
+              <th>${isMandarin ? "价格" : "Harga"}</th>
+              <th>${isMandarin ? "金额" : "Jumlah"}</th>
             </tr>
-            <tr>
-              <td><strong>${isMandarin ? "单据日期" : "Tanggal Nota"}</strong> ${notaDate}</td>
-              <td><strong>${isMandarin ? "到期日" : "Jatuh Tempo"}</strong> ${dueDate || "-"}</td>
-            </tr>
-          </table>
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th></th>
-                <th>${isMandarin ? "商品名称" : "Nama Barang"}</th>
-                <th>${isMandarin ? "数量" : "Qty"}</th>
-                <th>${isMandarin ? "价格" : "Harga"}</th>
-                <th>${isMandarin ? "金额" : "Jumlah"}</th>
-              </tr>
-            </thead>
-           <tbody>
-          ${pageItems
-            .map(
-              (item, index) => `
-            <tr>
-              <td>${startIndex + index + 1}</td>
-              <td><div class="checkbox"></div></td>
-              <td>${item.name}</td>
-              <td>${item.qty} ${item.unit}</td>
-              <td>Rp${item.price.toLocaleString()}</td>
-              <td>Rp${(item.qty * item.price).toLocaleString()}</td>
-            </tr>
-          `,
-            )
-            .join("")}
-        </tbody>
-          </table>
-          ${page === pageCount - 1
+          </thead>
+         <tbody>
+        ${pageItems
+          .map(
+            (item, index) => `
+          <tr>
+            <td>${startIndex + index + 1}</td>
+            <td><div class="checkbox"></div></td>
+            <td>${item.name}</td>
+            <td>${item.qty} ${item.unit}</td>
+            <td>Rp${item.price.toLocaleString()}</td>
+            <td>Rp${(item.qty * item.price).toLocaleString()}</td>
+          </tr>
+        `,
+          )
+          .join("")}
+      </tbody>
+        </table>
+        ${
+          page === pageCount - 1
             ? `
-                <table class="total-table">
-                  <tr>
-                    <td colspan="5" class="text-right"><strong>${isMandarin ? "总计：" : "Total:"
-            }</strong></td>
-                    <td><strong>Rp${total.toLocaleString()}</strong></td>
-                  </tr>
-                </table>
-                <p><strong>${isMandarin ? "支付状态" : "Status Pembayaran"
-            }:</strong> ${paymentStatus === "lunas"
-              ? isMandarin
-                ? "已付款"
-                : "Lunas"
-              : isMandarin
-                ? "未付款"
-                : "Belum Lunas"
-            }</p>
-                <div class="signature-section">
-                  <div class="signature-box">
-                    <p>${isMandarin ? "制作人" : "Dibuat Oleh"}</p>
-                    <div class="signature-line"></div>
-                    <p>(______________)</p>
-                  </div>
-                  <div class="signature-box">
-                    <p>${isMandarin ? "送货员" : "Pengantar"}</p>
-                    <div class="signature-line"></div>
-                    <p>(______________)</p>
-                  </div>
-                  <div class="signature-box">
-                    <p>${isMandarin ? "收货人" : "Penerima"}</p>
-                    <div class="signature-line"></div>
-                    <p>(______________)</p>
-                  </div>
-                </div>`
+              <table class="total-table">
+                <tr>
+                  <td colspan="5" class="text-right"><strong>${isMandarin ? "总计：" : "Total:"}</strong></td>
+                  <td><strong>Rp${total.toLocaleString()}</strong></td>
+                </tr>
+              </table>
+              <p><strong>${isMandarin ? "支付状态" : "Status Pembayaran"}:</strong> ${
+                paymentStatus === "lunas" ? (isMandarin ? "已付款" : "Lunas") : isMandarin ? "未付款" : "Belum Lunas"
+              }</p>
+              <div class="signature-section">
+                <div class="signature-box">
+                  <p>${isMandarin ? "制作人" : "Dibuat Oleh"}</p>
+                  <div class="signature-line"></div>
+                  <p>(______________)</p>
+                </div>
+                <div class="signature-box">
+                  <p>${isMandarin ? "送货员" : "Pengantar"}</p>
+                  <div class="signature-line"></div>
+                  <p>(______________)</p>
+                </div>
+                <div class="signature-box">
+                  <p>${isMandarin ? "收货人" : "Penerima"}</p>
+                  <div class="signature-line"></div>
+                  <p>(______________)</p>
+                </div>
+              </div>`
             : ""
-          }
-        </div>`;
+        }
+      </div>`
+      }
+
+      // Surat Jalan content (if includeSuratJalan is true)
+      if (includeSuratJalan) {
+        printContent += `
+      <div class="page ${pageSize}">
+        <div class="document-title">${isMandarin ? "送货单" : "SURAT JALAN"}</div>
+        <table class="info-table">
+          <tr>
+            <td><strong>${isMandarin ? "客户" : "Kepada:"}</strong> ${
+              selectedCustomerObj ? selectedCustomerObj.storeName : "Not selected"
+            }</td>
+            <td><strong>${isMandarin ? "送货单日期" : "Tanggal Surat Jalan"}</strong> ${new Date(notaDate)
+              .toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })
+              .split("-")
+              .join("/")}</td>
+            <td><strong>${isMandarin ? "送货单编号" : "Nomor Surat Jalan"}</strong> ${notaNumber}</td>
+          </tr>
+        </table>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>${isMandarin ? "核对" : "Check"}</th>
+              <th>${isMandarin ? "商品名称" : "Nama Barang"}</th>
+              <th>${isMandarin ? "数量" : "Qty"}</th>
+            </tr>
+          </thead>
+         <tbody>
+        ${items
+          .map(
+            (item, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td><div class="checkbox"></div></td>
+            <td>${item.name}</td>
+            <td>${item.qty} ${item.unit}</td>
+          </tr>
+        `,
+          )
+          .join("")}
+      </tbody>
+        </table>
+        <div class="signature-section">
+          <div class="signature-box">
+            <p>${isMandarin ? "制作人" : "Dibuat Oleh"}</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+          <div class="signature-box">
+            <p>${isMandarin ? "送货员" : "Pengantar"}</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+          <div class="signature-box">
+            <p>${isMandarin ? "收货人" : "Penerima"}</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+        </div>
+      </div>`
       }
 
       printWindow.document.write(`
-  <html>
-    <head>
-      <title>Print Nota</title>
-      <style>
-        @page {
-          size: ${pageSize};
-          margin: 0;
-        }
-        body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 0;
-          font-size: 8pt;
-        }
-        .page {
-          width: ${pageWidth}mm;
-          height: ${pageHeight}mm;
-          padding: 10mm;
-          box-sizing: border-box;
-          page-break-after: always;
-        }
-        .header {
-          margin-bottom: 5mm;
-        }
-        .header h1 {
-          margin: 0 0 2mm 0;
-          font-size: 12pt;
-        }
-        .header p {
-          margin: 0;
-          line-height: 1.2;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 3mm;
-        }
-        th, td {
-          border: 1px solid #ddd;
-          padding: 1mm;
-          text-align: left;
-          font-size: 7pt;
-        }
-        th {
-          background-color: #f2f2f2;
-          font-weight: normal;
-        }
-        .info-table td {
-          border: none;
-          padding: 1mm 0;
-        }
-        .items-table th, .items-table td {
-          padding: 0.5mm;
-        }
-        .total-table {
-          margin-top: 2mm;
-        }
-        .checkbox {
-          width: 2mm;
-          height: 2mm;
-          border: 0.5pt solid black;
-          display: inline-block;
-        }
-        .signature-section {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 5mm;
-          font-size: 6pt;
-        }
-        .signature-box {
-          text-align: center;
-          width: 30%;
-        }
-        .signature-line {
-          border-top: 1px solid black;
-          margin-top: 10mm;
-          width: 100%;
-        }
-        .page-number {
-          text-align: center;
-          margin-top: 2mm;
-          font-size: 6pt;
-        }
-      </style>
-    </head>
-    <body>
-      ${printContent}
-    </body>
-  </html>
+<html>
+  <head>
+    <title>Print Nota ${includeSuratJalan ? "and Surat Jalan" : ""}</title>
+    <style>
+      @page {
+        size: ${pageSize};
+        margin: 0;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        font-size: 8pt;
+      }
+      .page {
+        width: ${pageWidth}mm;
+        height: ${pageHeight}mm;
+        padding: 10mm;
+        box-sizing: border-box;
+        page-break-after: always;
+      }
+      .header {
+        margin-bottom: 5mm;
+      }
+      .header h1 {
+        margin: 0 0 2mm 0;
+        font-size: 12pt;
+      }
+      .header p {
+        margin: 0;
+        line-height: 1.2;
+      }
+      .document-title {
+        font-size: 14pt;
+        font-weight: bold;
+        text-align: center;
+        margin: 5mm 0;
+        text-decoration: underline;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 3mm;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 1mm;
+        text-align: left;
+        font-size: 7pt;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: normal;
+      }
+      .info-table td {
+        border: none;
+        padding: 1mm 0;
+      }
+      .items-table th, .items-table td {
+        padding: 0.5mm;
+      }
+      .total-table {
+        margin-top: 2mm;
+      }
+      .checkbox {
+        width: 3mm;
+        height: 3mm;
+        border: 0.5pt solid black;
+        display: inline-block;
+      }
+      .signature-section {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 5mm;
+        font-size: 6pt;
+      }
+      .signature-box {
+        text-align: center;
+        width: 30%;
+      }
+      .signature-line {
+        border-top: 1px solid black;
+        margin-top: 10mm;
+        width: 100%;
+      }
+      .page-number {
+        text-align: center;
+        margin-top: 2mm;
+        font-size: 6pt;
+      }
+    </style>
+  </head>
+  <body>
+    ${printContent}
+  </body>
+</html>
 `)
       printWindow.document.close()
       printWindow.print()
@@ -503,7 +574,7 @@ export function CreateNota() {
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
-              <div style={{ color: 'red' }}>{notaNumber || "Not set"}</div>
+              <div style={{ color: "red" }}>{notaNumber || "Not set"}</div>
             </div>
           </div>
 
@@ -556,15 +627,119 @@ export function CreateNota() {
             <div className="text-sm text-muted-foreground">{language === "id" ? "Status Pembayaran" : "支付状态"}</div>
             <div>
               {paymentStatus === "lunas" ? (
-                <span style={{ color: 'green' }}>
-                  {language === "id" ? "Lunas" : "已付款"}
-                </span>
+                <span style={{ color: "green" }}>{language === "id" ? "Lunas" : "已付款"}</span>
               ) : (
-                <span style={{ color: 'red' }}>
-                  {language === "id" ? "Belum Lunas" : "未付款"}
-                </span>
+                <span style={{ color: "red" }}>{language === "id" ? "Belum Lunas" : "未付款"}</span>
               )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mt-8">
+            <div className="text-center">
+              <div className="mb-16">{language === "id" ? "Dibuat Oleh" : "制作人"}</div>
+              <div className="border-t border-black pt-2">(______________)</div>
+            </div>
+            <div className="text-center">
+              <div className="mb-16">{language === "id" ? "Pengantar" : "送货员"}</div>
+              <div className="border-t border-black pt-2">(______________)</div>
+            </div>
+            <div className="text-center">
+              <div className="mb-16">{language === "id" ? "Penerima" : "收货人"}</div>
+              <div className="border-t border-black pt-2">(______________)</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const SuratJalanPreview = ({ language }: { language: "id" | "zh" }) => {
+    const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
+    const showHeader = selectedCustomerObj?.requireHeaderNota !== false
+
+    return (
+      <Card className={!showHeader ? "pt-6" : ""}>
+        {showHeader && (
+          <CardHeader>
+            <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {language === "id" ? (
+                <>
+                  Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan
+                  <br />
+                  Pasar Mitra Raya Block B No. 05, Batam Centre
+                  <br />
+                  Hp 082284228888
+                </>
+              ) : (
+                <>
+                  销售：蔬菜、肉丸和水果
+                  <br />
+                  巴淡岛中心Mitra Raya市场B座05号
+                  <br />
+                  电话：082284228888
+                </>
+              )}
+            </p>
+          </CardHeader>
+        )}
+        <CardContent className="space-y-6">
+          <div className="text-center font-bold text-xl underline mb-4">
+            {language === "id" ? "SURAT JALAN" : "送货单"}
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">{language === "id" ? "Kepada" : "客户"}</div>
+              <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">
+                {language === "id" ? "Tanggal Surat Jalan" : "送货单日期"}
+              </div>
+              <div>
+                {notaDate
+                  ? new Date(notaDate)
+                      .toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
+                      .split("-")
+                      .join("/")
+                  : "Not set"}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">
+                {language === "id" ? "Nomor Surat Jalan" : "送货单编号"}
+              </div>
+              <div style={{ color: "red" }}>{notaNumber || "Not set"}</div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 text-sm">#</th>
+                  <th className="text-left py-2 text-sm">{language === "id" ? "Check" : "核对"}</th>
+                  <th className="text-left py-2 text-sm">{language === "id" ? "Nama Barang" : "商品名称"}</th>
+                  <th className="text-left py-2 text-sm">{language === "id" ? "Qty" : "数量"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, index) => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="py-2">{index + 1}</td>
+                    <td className="py-2">
+                      <div className="border border-gray-300 w-5 h-5"></div>
+                    </td>
+                    <td className="py-2">{item.name}</td>
+                    <td className="py-2">{item.qty} {item.unit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           <div className="grid grid-cols-3 gap-4 mt-8">
@@ -791,7 +966,7 @@ export function CreateNota() {
           {/* Right Column - Preview */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Nota Preview</h2>
+              <h2 className="text-lg font-semibold">Preview</h2>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Indonesia</span>
                 <Switch checked={isMandarin} onCheckedChange={setIsMandarin} />
@@ -799,9 +974,28 @@ export function CreateNota() {
               </div>
             </div>
 
-            <NotaPreview language={isMandarin ? "zh" : "id"} />
+            {includeSuratJalan ? (
+              <div className="space-y-4">
+                <h3 className="text-md font-medium">Nota</h3>
+                <NotaPreview language={isMandarin ? "zh" : "id"} />
+
+                <h3 className="text-md font-medium mt-6">Surat Jalan</h3>
+                <SuratJalanPreview language={isMandarin ? "zh" : "id"} />
+              </div>
+            ) : (
+              <NotaPreview language={isMandarin ? "zh" : "id"} />
+            )}
 
             <div className="flex justify-end space-x-2">
+              <div className="flex items-center mr-auto">
+                <Switch
+                  id="include-surat-jalan"
+                  checked={includeSuratJalan}
+                  onCheckedChange={setIncludeSuratJalan}
+                  className="mr-2"
+                />
+                <Label htmlFor="include-surat-jalan">Include Surat Jalan</Label>
+              </div>
               <Button variant="outline" className="gap-2" onClick={handlePrint}>
                 <Printer className="h-4 w-4" /> Print
               </Button>
