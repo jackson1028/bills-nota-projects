@@ -279,7 +279,7 @@ export function EditNota({ notaId }: { notaId: string }) {
       const pageSize = isA5 ? "A5" : "A4"
       const pageWidth = isA5 ? 148 : 210
       const pageHeight = isA5 ? 210 : 297
-      const itemsPerPage = isA5 ? 10 : 25
+      const itemsPerPage = isA5 ? 10 : 40
 
       const pageCount = Math.ceil(items.length / itemsPerPage)
 
