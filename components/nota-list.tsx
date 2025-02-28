@@ -218,7 +218,6 @@ export function NotaList() {
           <div class="header">
             <h1>Toko Yanto</h1>
             <p>
-              Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
               Pasar Mitra Raya Block B No. 05, Batam Centre<br>
               Hp 082284228888
             </p>

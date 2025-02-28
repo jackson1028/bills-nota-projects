@@ -302,11 +302,9 @@ printContent = `
         <p>
           ${
             !isMandarin 
-              ? `Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan<br>
-                 Pasar Mitra Raya Block B No. 05, Batam Centre<br>
+              ? `Pasar Mitra Raya Block B No. 05, Batam Centre<br>
                  Hp 082284228888`
-              : `销售：蔬菜、肉丸和水果<br>
-                 巴淡岛中心Mitra Raya市场B座05号<br>
+              : `巴淡岛中心Mitra Raya市场B座05号<br>
                  电话：082284228888`
           }
         </p>
@@ -493,16 +491,12 @@ printContent = `
             <p className="text-sm text-muted-foreground">
               {language === "id" ? (
                 <>
-                  Menjual: Sayur - Mayur, Bakso-Bakso & Buah-Buahan
-                  <br />
                   Pasar Mitra Raya Block B No. 05, Batam Centre
                   <br />
                   Hp 082284228888
                 </>
               ) : (
                 <>
-                  销售：蔬菜、肉丸和水果
-                  <br />
                   巴淡岛中心Mitra Raya市场B座05号
                   <br />
                   电话：082284228888
