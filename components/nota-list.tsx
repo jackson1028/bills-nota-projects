@@ -627,8 +627,30 @@ export function NotaList() {
                   <tbody>
                     {notaData.map((nota) => (
                       <tr key={nota._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="p-3 text-sm text-gray-700">{new Date(nota.createdAt).toLocaleString()}</td>
-                        <td className="p-3 text-sm text-gray-700">{new Date(nota.notaDate).toLocaleDateString()}</td>
+                        <td className="p-3 text-sm text-gray-700">
+                          {new Date(nota.createdAt)
+                            .toLocaleDateString("id-ID", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                              hour12: true,
+                            })
+                            .split("/")
+                            .join("/")}
+                          </td>
+                        <td className="p-3 text-sm text-gray-700">
+                          {new Date(nota.notaDate)
+                            .toLocaleDateString("id-ID", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            })
+                            .split("-")
+                            .join("/")}
+                          </td>
                         <td className="p-3 text-sm text-gray-700">{nota.notaNumber}</td>
                         <td className="p-3 text-sm text-gray-700">Rp{nota.total.toLocaleString()}</td>
                         <td className="p-3">
