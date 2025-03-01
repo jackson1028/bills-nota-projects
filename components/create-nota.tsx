@@ -60,6 +60,81 @@ export function CreateNota() {
   const [isLoading, setIsLoading] = useState(false)
   const [openCustomer, setOpenCustomer] = useState(false)
 
+  // Add a new state to store translated items
+  const [translatedItems, setTranslatedItems] = useState<Record<string, string>>({})
+
+  // Add a function to translate text using Google Translate API
+  const translateText = async (text: string, targetLang: string) => {
+    try {
+      // Using Google Translate API through a proxy endpoint
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=id&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`
+
+      const response = await fetch(url)
+      const data = await response.json()
+
+      // The response structure is a nested array where the first element contains translation segments
+      // and the first element of each segment is the translated text
+      if (data && data[0] && data[0][0] && data[0][0][0]) {
+        return data[0][0][0]
+      }
+
+      throw new Error("Unexpected response format")
+    } catch (error) {
+      console.error("Translation error:", error)
+      // Return original text if translation fails
+      return text
+    }
+  }
+
+  // Add a function to translate all items
+  const translateItems = async () => {
+    if (!isMandarin) return
+
+    const newTranslations: Record<string, string> = { ...translatedItems }
+
+    // Only translate items that haven't been translated yet
+    const untranslatedItems = items.filter((item) => !translatedItems[item.name])
+    console.log(untranslatedItems)
+    if (untranslatedItems.length === 0) return
+
+    try {
+      for (const item of untranslatedItems) {
+        if (!newTranslations[item.name]) {
+          const translatedName = await translateText(item.name, "zh")
+          const translatedUnit = await translateText(item.unit, "zh")
+          newTranslations[item.name] = translatedName
+          newTranslations[item.unit] = translatedUnit
+        }
+      }
+
+      setTranslatedItems(newTranslations)
+    } catch (error) {
+      console.error("Error translating items:", error)
+      toast.error("Error", {
+        description: "Failed to translate items",
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (isMandarin && items.length > 0) {
+      translateItems()
+    }
+  }, [isMandarin, items, translateItems])
+
+  const getItemName = (name: string) => {
+    if (isMandarin && translatedItems[name]) {
+      return translatedItems[name]
+    }
+    return name
+  }
+  const getUnitName = (name: string) => {
+    if (isMandarin && translatedItems[name]) {
+      return translatedItems[name]
+    }
+    return name
+  }
+
   const router = useRouter()
 
   useEffect(() => {
@@ -318,7 +393,7 @@ export function CreateNota() {
           <tr>
             <td>${startIndex + index + 1}</td>
             <td><div class="checkbox"></div></td>
-            <td>${item.name}</td>
+            <td>${isMandarin && translatedItems[item.name] ? translatedItems[item.name] : item.name}</td>
             <td>${item.qty} ${item.unit}</td>
             <td>Rp${item.price.toLocaleString()}</td>
             <td>Rp${(item.qty * item.price).toLocaleString()}</td>
@@ -399,7 +474,7 @@ export function CreateNota() {
           <tr>
             <td>${index + 1}</td>
             <td><div class="checkbox"></div></td>
-            <td>${item.name}</td>
+            <td>${isMandarin && translatedItems[item.name] ? translatedItems[item.name] : item.name}</td>
             <td>${item.qty} ${item.unit}</td>
           </tr>
         `,
@@ -591,9 +666,9 @@ export function CreateNota() {
                     <td className="py-2">
                       <div className="border border-gray-300 w-4 h-4"></div>
                     </td>
-                    <td className="py-2">{item.name}</td>
+                    <td className="py-2">{getItemName(item.name)}</td>
                     <td className="py-2">
-                      {item.qty} {item.unit}
+                      {item.qty} {getUnitName(item.unit)}
                     </td>
                     <td className="py-2">Rp{item.price.toLocaleString()}</td>
                     <td className="py-2 text-right">Rp{(item.qty * item.price).toLocaleString()}</td>
@@ -652,27 +727,7 @@ export function CreateNota() {
     const showHeader = selectedCustomerObj?.requireHeaderNota !== false
 
     return (
-      <Card className={!showHeader ? "pt-6" : ""}>
-        {showHeader && (
-          <CardHeader>
-            <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {language === "id" ? (
-                <>
-                  Pasar Mitra Raya Block B No. 05, Batam Centre
-                  <br />
-                  Hp 082284228888
-                </>
-              ) : (
-                <>
-                  巴淡岛中心Mitra Raya市场B座05号
-                  <br />
-                  电话：082284228888
-                </>
-              )}
-            </p>
-          </CardHeader>
-        )}
+      <Card className={"pt-6"}>
         <CardContent className="space-y-6">
           <div className="text-center font-bold text-xl underline mb-4">
             {language === "id" ? "SURAT JALAN" : "送货单"}
@@ -724,8 +779,10 @@ export function CreateNota() {
                     <td className="py-2">
                       <div className="border border-gray-300 w-5 h-5"></div>
                     </td>
-                    <td className="py-2">{item.name}</td>
-                    <td className="py-2">{item.qty} {item.unit}</td>
+                    <td className="py-2">{getItemName(item.name)}</td>
+                    <td className="py-2">
+                      {item.qty} {getItemName(item.unit)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -865,7 +922,7 @@ export function CreateNota() {
                     {items.map((item, index) => (
                       <tr key={item.id} className="border-b last:border-0">
                         <td className="p-3">{index + 1}</td>
-                        <td className="p-3">{item.name}</td>
+                        <td className="p-3">{getItemName(item.name)}</td>
                         <td className="p-3">{item.qty}</td>
                         <td className="p-3">{item.unit}</td>
                         <td className="p-3">Rp{item.price.toLocaleString()}</td>
