@@ -34,7 +34,6 @@ export function EditCustomer({ customer, onCustomerUpdated, onCancel }: EditCust
   const [notaCode, setNotaCode] = useState(customer.notaCode)
   const [requireHeaderNota, setRequireHeaderNota] = useState(customer.requireHeaderNota)
   const [isLoading, setIsLoading] = useState(false)
-  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1,22 +1,23 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Printer, X } from "lucide-react"
+import { Printer, X, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { toast } from "sonner"
 
-// Update the LineItem interface
 interface LineItem {
   id: number
+  itemId: string
   name: string
+  namaMandarin: string
   qty: number
   price: number
   unit: string
@@ -34,6 +35,12 @@ interface Unit {
   name: string
 }
 
+interface Item {
+  _id: string
+  nama: string
+  namaMandarin: string
+}
+
 interface Nota {
   _id: string
   customerId: string
@@ -49,9 +56,10 @@ interface Nota {
 export function EditNota({ notaId }: { notaId: string }) {
   const [nota, setNota] = useState<Nota | null>(null)
   const [items, setItems] = useState<LineItem[]>([])
-  // Update the newItem state
   const [newItem, setNewItem] = useState({
+    itemId: "",
     name: "",
+    namaMandarin: "",
     qty: 1,
     price: 0,
     unit: "",
@@ -61,100 +69,127 @@ export function EditNota({ notaId }: { notaId: string }) {
   const [selectedCustomer, setSelectedCustomer] = useState<string>("")
   const [customers, setCustomers] = useState<Customer[]>([])
   const [units, setUnits] = useState<Unit[]>([])
+  const [availableItems, setAvailableItems] = useState<Item[]>([])
   const [notaNumber, setNotaNumber] = useState("")
   const [notaDate, setNotaDate] = useState("")
   const [dueDate, setDueDate] = useState("")
-  // Add the includeSuratJalan state after the paymentStatus state
   const [paymentStatus, setPaymentStatus] = useState<"lunas" | "belum lunas">("belum lunas")
   const [includeSuratJalan, setIncludeSuratJalan] = useState(false)
   const [translatedItems, setTranslatedItems] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
-  // Add a warning message when editing a published nota
   const [showPublishedWarning, setShowPublishedWarning] = useState(false)
+  const [openItem, setOpenItem] = useState(false)
 
   const router = useRouter()
 
+  const fetchNota = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/notas/${notaId}`)
+      if (!response.ok) {
+        throw new Error("Failed to fetch nota")
+      }
+      const data = await response.json()
+      setNota(data)
+      setItems(data.items)
+      setSelectedCustomer(data.customerId)
+      setNotaNumber(data.notaNumber)
+      setNotaDate(new Date(data.notaDate).toISOString().split("T")[0])
+      setDueDate(data.dueDate ? new Date(data.dueDate).toISOString().split("T")[0] : "")
+      setPaymentStatus(data.paymentStatus)
+    } catch (error) {
+      console.error("Error fetching nota:", error)
+      toast.error("Error", {
+        description: "Failed to fetch nota",
+      })
+    }
+  }, [notaId])
+
+  const fetchCustomers = useCallback(async () => {
+    try {
+      const response = await fetch("/api/customers")
+      if (!response.ok) {
+        throw new Error("Failed to fetch customers")
+      }
+      const data = await response.json()
+      setCustomers(data)
+    } catch (error) {
+      console.error("Error fetching customers:", error)
+      toast.error("Error", {
+        description: "Failed to fetch customers",
+      })
+    }
+  }, [])
+
+  const fetchUnits = useCallback(async () => {
+    try {
+      const response = await fetch("/api/units")
+      if (!response.ok) {
+        throw new Error("Failed to fetch units")
+      }
+      const data = await response.json()
+      setUnits(data)
+    } catch (error) {
+      console.error("Error fetching units:", error)
+      toast.error("Error", {
+        description: "Failed to fetch units",
+      })
+    }
+  }, [])
+
+  const fetchItems = useCallback(async () => {
+    try {
+      const response = await fetch("/api/items")
+      if (!response.ok) {
+        throw new Error("Failed to fetch items")
+      }
+      const data = await response.json()
+      setAvailableItems(data)
+    } catch (error) {
+      console.error("Error fetching items:", error)
+      toast.error("Error", {
+        description: "Failed to fetch items",
+      })
+    }
+  }, [])
+
   useEffect(() => {
-    const fetchNota = async () => {
-      try {
-        const response = await fetch(`/api/notas/${notaId}`)
-        if (!response.ok) {
-          throw new Error("Failed to fetch nota")
-        }
-        const data = await response.json()
-        setNota(data)
-        setItems(data.items)
-        setSelectedCustomer(data.customerId)
-        setNotaNumber(data.notaNumber)
-        setNotaDate(new Date(data.notaDate).toISOString().split("T")[0])
-        setDueDate(data.dueDate ? new Date(data.dueDate).toISOString().split("T")[0] : "")
-        setPaymentStatus(data.paymentStatus)
-      } catch (error) {
-        console.error("Error fetching nota:", error)
-        toast.error("Error", {
-          description: "Failed to fetch nota",
-        })
-      }
-    }
-
-    const fetchCustomers = async () => {
-      try {
-        const response = await fetch("/api/customers")
-        if (!response.ok) {
-          throw new Error("Failed to fetch customers")
-        }
-        const data = await response.json()
-        setCustomers(data)
-      } catch (error) {
-        console.error("Error fetching customers:", error)
-        toast.error("Error", {
-          description: "Failed to fetch customers",
-        })
-      }
-    }
-
-    const fetchUnits = async () => {
-      try {
-        const response = await fetch("/api/units")
-        if (!response.ok) {
-          throw new Error("Failed to fetch units")
-        }
-        const data = await response.json()
-        setUnits(data)
-      } catch (error) {
-        console.error("Error fetching units:", error)
-        toast.error("Error", {
-          description: "Failed to fetch units",
-        })
-      }
-    }
-
     fetchNota()
     fetchCustomers()
     fetchUnits()
-  }, [notaId, toast])
+    fetchItems()
+  }, [fetchNota, fetchCustomers, fetchUnits, fetchItems])
 
-  // In the addNewItem function, make sure to include the unit
-  const addNewItem = (e?: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e && e.key !== "Enter") return
-    if (!newItem.name || newItem.qty <= 0 || !newItem.unit) {
+  useEffect(() => {
+    if (nota && nota.status === "terbit") {
+      setShowPublishedWarning(true)
+    }
+  }, [nota])
+
+  const addNewItem = () => {
+    if (!newItem.itemId || newItem.qty <= 0 || !newItem.unit) {
       return
     }
+
+    const selectedItem = availableItems.find((item) => item._id === newItem.itemId)
+    if (!selectedItem) return
 
     setItems([
       ...items,
       {
         id: items.length + 1,
-        name: newItem.name,
+        itemId: selectedItem._id,
+        name: selectedItem.nama,
+        namaMandarin: selectedItem.namaMandarin,
         qty: newItem.qty,
         price: newItem.price,
         unit: newItem.unit,
       },
     ])
 
-    // Reset form
     setNewItem({
+      itemId: "",
       name: "",
+      namaMandarin: "",
       qty: 1,
       price: 0,
       unit: "",
@@ -211,7 +246,6 @@ export function EditNota({ notaId }: { notaId: string }) {
         description: "Nota updated successfully",
       })
 
-      // Redirect to the nota list page
       router.push("/nota")
     } catch (error) {
       console.error("Error updating nota:", error)
@@ -259,7 +293,6 @@ export function EditNota({ notaId }: { notaId: string }) {
         description: "Nota published successfully",
       })
 
-      // Redirect to the nota list page
       router.push("/nota")
     } catch (error) {
       console.error("Error publishing nota:", error)
@@ -271,7 +304,6 @@ export function EditNota({ notaId }: { notaId: string }) {
     }
   }
 
-  // Update the handlePrint function to include surat jalan functionality
   const handlePrint = () => {
     const printWindow = window.open("", "_blank")
     if (printWindow) {
@@ -341,8 +373,8 @@ export function EditNota({ notaId }: { notaId: string }) {
         <tr>
           <td>${startIndex + index + 1}</td>
           <td><div class="checkbox"></div></td>
-          <td>${isMandarin && translatedItems[item.name] ? translatedItems[item.name] : item.name}</td>
-          <td>${item.qty} ${isMandarin && translatedItems[item.unit] ? translatedItems[item.unit] : item.unit}</td>
+          <td>${isMandarin ? item.namaMandarin : item.name}</td>
+          <td>${item.qty} ${item.unit}</td>
           <td>Rp${item.price.toLocaleString()}</td>
           <td>Rp${(item.qty * item.price).toLocaleString()}</td>
         </tr>
@@ -424,8 +456,8 @@ export function EditNota({ notaId }: { notaId: string }) {
         <tr>
           <td>${index + 1}</td>
           <td><div class="checkbox"></div></td>
-          <td>${isMandarin && translatedItems[item.name] ? translatedItems[item.name] : item.name}</td>
-          <td>${item.qty} ${isMandarin && translatedItems[item.unit] ? translatedItems[item.unit] : item.unit}</td>
+          <td>${isMandarin ? item.namaMandarin : item.name}</td>
+          <td>${item.qty} ${item.unit}</td>
         </tr>
       `,
         )
@@ -555,7 +587,7 @@ export function EditNota({ notaId }: { notaId: string }) {
     }
   }
 
-  const translateText = async (text: string, targetLang: string) => {
+  const translateText = useCallback(async (text: string, targetLang: string) => {
     try {
       // Using Google Translate API through a proxy endpoint
       const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=id&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`
@@ -575,9 +607,9 @@ export function EditNota({ notaId }: { notaId: string }) {
       // Return original text if translation fails
       return text
     }
-  }
+  }, [])
 
-  const translateItems = async () => {
+  const translateItems = useCallback(async () => {
     if (!isMandarin) return
 
     const newTranslations: Record<string, string> = { ...translatedItems }
@@ -603,7 +635,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         description: "Failed to translate items",
       })
     }
-  }
+  }, [isMandarin, items, translateText, translatedItems])
 
   const getItemName = (name: string) => {
     if (isMandarin && translatedItems[name]) {
@@ -619,245 +651,16 @@ export function EditNota({ notaId }: { notaId: string }) {
     return name
   }
 
-  // Add the SuratJalanPreview component after the NotaPreview component
-  const NotaPreview = ({ language }: { language: "id" | "zh" }) => {
-    const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
-    const showHeader = selectedCustomerObj?.requireHeaderNota !== false
-
-    return (
-      <Card className={!showHeader ? "pt-6" : ""}>
-        {showHeader && (
-          <CardHeader>
-            <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {language === "id" ? (
-                <>
-                  Pasar Mitra Raya Block B No. 05, Batam Centre
-                  <br />
-                  Hp 082284228888
-                </>
-              ) : (
-                <>
-                  巴淡岛中心Mitra Raya市场B座05号
-                  <br />
-                  电话：082284228888
-                </>
-              )}
-            </p>
-          </CardHeader>
-        )}
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">{language === "id" ? "Customer" : "客户"}</div>
-              <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
-              <div>{notaDate || "Not set"}</div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
-              <div style={{ color: "red" }}>{notaNumber || "Not set"}</div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 text-sm">#</th>
-                  <th className="text-left py-2 text-sm"></th>
-                  <th className="text-left py-2 text-sm">{language === "id" ? "Nama Barang" : "商品名称"}</th>
-                  <th className="text-left py-2 text-sm">{language === "id" ? "Qty" : "数量"}</th>
-                  <th className="text-left py-2 text-sm">{language === "id" ? "Harga" : "价格"}</th>
-                  <th className="text-right py-2 text-sm">{language === "id" ? "Jumlah" : "金额"}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, index) => (
-                  <tr key={item.id} className="border-b last:border-0">
-                    <td className="py-2">{index + 1}</td>
-                    <td className="py-2">
-                      <div className="border border-gray-300 w-4 h-4"></div>
-                    </td>
-                    <td className="py-2">{getItemName(item.name)}</td>
-                    <td className="py-2">
-                      {item.qty} {getUnitName(item.unit)}
-                    </td>
-                    <td className="py-2">Rp{item.price.toLocaleString()}</td>
-                    <td className="py-2 text-right">Rp{(item.qty * item.price).toLocaleString()}</td>
-                  </tr>
-                ))}
-                <tr className="font-medium">
-                  <td colSpan={5} className="py-2 text-right">
-                    {language === "id" ? "Total:" : "总计："}
-                  </td>
-                  <td className="py-2 text-right">Rp{total.toLocaleString()}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">{language === "id" ? "Jatuh Tempo" : "到期日"}</div>
-              <div>{dueDate || "-"}</div>
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">{language === "id" ? "Status Pembayaran" : "支付状态"}</div>
-            <div>
-              {paymentStatus === "lunas" ? (
-                <span style={{ color: "green" }}>{language === "id" ? "Lunas" : "已付款"}</span>
-              ) : (
-                <span style={{ color: "red" }}>{language === "id" ? "Belum Lunas" : "未付款"}</span>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mt-8">
-            <div className="text-center">
-              <div className="mb-16">{language === "id" ? "Dibuat Oleh" : "制作人"}</div>
-              <div className="border-t border-black pt-2">(______________)</div>
-            </div>
-            <div className="text-center">
-              <div className="mb-16">{language === "id" ? "Pengantar" : "送货员"}</div>
-              <div className="border-t border-black pt-2">(______________)</div>
-            </div>
-            <div className="text-center">
-              <div className="mb-16">{language === "id" ? "Penerima" : "收货人"}</div>
-              <div className="border-t border-black pt-2">(______________)</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const SuratJalanPreview = ({ language }: { language: "id" | "zh" }) => {
-    const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
-    const showHeader = selectedCustomerObj?.requireHeaderNota !== false
-
-    return (
-      <Card className={"pt-6"}>
-        {/* {showHeader && (
-          <CardHeader>
-            <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {language === "id" ? (
-                <>
-                  Pasar Mitra Raya Block B No. 05, Batam Centre
-                  <br />
-                  Hp 082284228888
-                </>
-              ) : (
-                <>
-                  巴淡岛中心Mitra Raya市场B座05号
-                  <br />
-                  电话：082284228888
-                </>
-              )}
-            </p>
-          </CardHeader>
-        )} */}
-        <CardContent className="space-y-6">
-          <div className="text-center font-bold text-xl underline mb-4">
-            {language === "id" ? "SURAT JALAN" : "送货单"}
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">{language === "id" ? "Kepada" : "客户"}</div>
-              <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">
-                {language === "id" ? "Tanggal Surat Jalan" : "送货单日期"}
-              </div>
-              <div>
-                {notaDate
-                  ? new Date(notaDate)
-                      .toLocaleDateString("id-ID", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })
-                      .split("-")
-                      .join("/")
-                  : "Not set"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">
-                {language === "id" ? "Nomor Surat Jalan" : "送货单编号"}
-              </div>
-              <div style={{ color: "red" }}>{notaNumber || "Not set"}</div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 text-sm">#</th>
-                  <th className="text-left py-2 text-sm">{language === "id" ? "Check" : "核对"}</th>
-                  <th className="text-left py-2 text-sm">{language === "id" ? "Nama Barang" : "商品名称"}</th>
-                  <th className="text-left py-2 text-sm">{language === "id" ? "Qty" : "数量"}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, index) => (
-                  <tr key={item.id} className="border-b last:border-0">
-                    <td className="py-2">{index + 1}</td>
-                    <td className="py-2">
-                      <div className="border border-gray-300 w-5 h-5"></div>
-                    </td>
-                    <td className="py-2">{getItemName(item.name)}</td>
-                    <td className="py-2">
-                      {item.qty} {getUnitName(item.unit)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mt-8">
-            <div className="text-center">
-              <div className="mb-16">{language === "id" ? "Dibuat Oleh" : "制作人"}</div>
-              <div className="border-t border-black pt-2">(______________)</div>
-            </div>
-            <div className="text-center">
-              <div className="mb-16">{language === "id" ? "Pengantar" : "送货员"}</div>
-              <div className="border-t border-black pt-2">(______________)</div>
-            </div>
-            <div className="text-center">
-              <div className="mb-16">{language === "id" ? "Penerima" : "收货人"}</div>
-              <div className="border-t border-black pt-2">(______________)</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  useEffect(() => {
-    if (nota && nota.status === "terbit") {
-      setShowPublishedWarning(true)
-    }
-  }, [nota])
-
   useEffect(() => {
     if (isMandarin && items.length > 0) {
       translateItems()
     }
-  }, [isMandarin, items])
+  }, [isMandarin, items, translateItems])
 
   if (!nota) {
     return <div>Loading...</div>
   }
 
-  // Update the preview section in the return statement to include the surat jalan toggle and preview
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-grow container mx-auto p-4 sm:p-6">
@@ -954,7 +757,7 @@ export function EditNota({ notaId }: { notaId: string }) {
                     {items.map((item, index) => (
                       <tr key={item.id} className="border-b last:border-0">
                         <td className="p-3">{index + 1}</td>
-                        <td className="p-3">{item.name}</td>
+                        <td className="p-3">{isMandarin ? item.namaMandarin : item.name}</td>
                         <td className="p-3">{item.qty}</td>
                         <td className="p-3">{item.unit}</td>
                         <td className="p-3">Rp{item.price.toLocaleString()}</td>
@@ -978,13 +781,47 @@ export function EditNota({ notaId }: { notaId: string }) {
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div className="space-y-2 sm:col-span-1">
                     <Label htmlFor="item-name">Nama Barang</Label>
-                    <Input
-                      id="item-name"
-                      value={newItem.name}
-                      onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                      onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addNewItem(e)}
-                      placeholder="Masukkan nama barang"
-                    />
+                    <Popover open={openItem} onOpenChange={setOpenItem}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openItem}
+                          className="w-full justify-between"
+                        >
+                          {newItem.itemId
+                            ? availableItems.find((item) => item._id === newItem.itemId)?.nama
+                            : "Select item"}
+                          <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search item..." className="h-9" />
+                          <CommandList>
+                            <CommandEmpty>No item found.</CommandEmpty>
+                            <CommandGroup>
+                              {availableItems.map((item) => (
+                                <CommandItem
+                                  key={item._id}
+                                  onSelect={() => {
+                                    setNewItem({
+                                      ...newItem,
+                                      itemId: item._id,
+                                      name: item.nama,
+                                      namaMandarin: item.namaMandarin,
+                                    })
+                                    setOpenItem(false)
+                                  }}
+                                >
+                                  {item.nama} ({item.namaMandarin})
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="item-qty">Qty</Label>
@@ -993,8 +830,7 @@ export function EditNota({ notaId }: { notaId: string }) {
                       type="number"
                       min="1"
                       value={newItem.qty}
-                      onChange={(e) => setNewItem({ ...newItem, qty: Number.parseInt(e.target.value) || 0 })}
-                      onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addNewItem(e)}
+                      onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 0 })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1019,14 +855,13 @@ export function EditNota({ notaId }: { notaId: string }) {
                       type="number"
                       min="0"
                       value={newItem.price}
-                      onChange={(e) => setNewItem({ ...newItem, price: Number.parseInt(e.target.value) || 0 })}
-                      onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addNewItem(e)}
+                      onChange={(e) => setNewItem({ ...newItem, price: Number(e.target.value) || 0 })}
                       placeholder="Rp"
                     />
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={() => addNewItem()} disabled={!newItem.name || newItem.qty <= 0 || !newItem.unit}>
+                  <Button onClick={addNewItem} disabled={!newItem.itemId || newItem.qty <= 0 || !newItem.unit}>
                     Add Item
                   </Button>
                 </div>
@@ -1056,13 +891,40 @@ export function EditNota({ notaId }: { notaId: string }) {
             {includeSuratJalan ? (
               <div className="space-y-4">
                 <h3 className="text-md font-medium">Nota</h3>
-                <NotaPreview language={isMandarin ? "zh" : "id"} />
+                <NotaPreview
+                  language={isMandarin ? "zh" : "id"}
+                  customers={customers}
+                  selectedCustomer={selectedCustomer}
+                  notaDate={notaDate}
+                  notaNumber={notaNumber}
+                  items={items}
+                  total={total}
+                  dueDate={dueDate}
+                  paymentStatus={paymentStatus}
+                />
 
                 <h3 className="text-md font-medium mt-6">Surat Jalan</h3>
-                <SuratJalanPreview language={isMandarin ? "zh" : "id"} />
+                <SuratJalanPreview
+                  language={isMandarin ? "zh" : "id"}
+                  customers={customers}
+                  selectedCustomer={selectedCustomer}
+                  notaDate={notaDate}
+                  notaNumber={notaNumber}
+                  items={items}
+                />
               </div>
             ) : (
-              <NotaPreview language={isMandarin ? "zh" : "id"} />
+              <NotaPreview
+                language={isMandarin ? "zh" : "id"}
+                customers={customers}
+                selectedCustomer={selectedCustomer}
+                notaDate={notaDate}
+                notaNumber={notaNumber}
+                items={items}
+                total={total}
+                dueDate={dueDate}
+                paymentStatus={paymentStatus}
+              />
             )}
 
             <div className="flex justify-end space-x-2">
@@ -1094,6 +956,243 @@ export function EditNota({ notaId }: { notaId: string }) {
         </div>
       </div>
     </div>
+  )
+}
+
+const NotaPreview = ({
+  language,
+  customers,
+  selectedCustomer,
+  notaDate,
+  notaNumber,
+  items,
+  total,
+  dueDate,
+  paymentStatus,
+}: {
+  language: "id" | "zh"
+  customers: Customer[]
+  selectedCustomer: string
+  notaDate: string
+  notaNumber: string
+  items: LineItem[]
+  total: number
+  dueDate: string
+  paymentStatus: "lunas" | "belum lunas"
+}) => {
+  const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
+  const showHeader = selectedCustomerObj?.requireHeaderNota !== false
+
+  return (
+    <Card className={!showHeader ? "pt-6" : ""}>
+      {showHeader && (
+        <CardHeader>
+          <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {language === "id" ? (
+              <>
+                Pasar Mitra Raya Block B No. 05, Batam Centre
+                <br />
+                Hp 082284228888
+              </>
+            ) : (
+              <>
+                巴淡岛中心Mitra Raya市场B座05号
+                <br />
+                电话：082284228888
+              </>
+            )}
+          </p>
+        </CardHeader>
+      )}
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <div className="text-sm text-muted-foreground">{language === "id" ? "Kepada" : "客户"}</div>
+            <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">{language === "id" ? "Tanggal Nota" : "单据日期"}</div>
+            <div>{notaDate || "Not set"}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
+            <div style={{ color: "red" }}>{notaNumber || "Not set"}</div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 text-sm">#</th>
+                <th className="text-left py-2 text-sm"></th>
+                <th className="text-left py-2 text-sm">{language === "id" ? "Nama Barang" : "商品名称"}</th>
+                <th className="text-left py-2 text-sm">{language === "id" ? "Qty" : "数量"}</th>
+                <th className="text-left py-2 text-sm">{language === "id" ? "Harga" : "价格"}</th>
+                <th className="text-right py-2 text-sm">{language === "id" ? "Jumlah" : "金额"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, index) => (
+                <tr key={item.id} className="border-b last:border-0">
+                  <td className="py-2">{index + 1}</td>
+                  <td className="py-2">
+                    <div className="border border-gray-300 w-4 h-4"></div>
+                  </td>
+                  <td className="py-2">{language === "id" ? item.name : item.namaMandarin}</td>
+                  <td className="py-2">
+                    {item.qty} {item.unit}
+                  </td>
+                  <td className="py-2">Rp{item.price.toLocaleString()}</td>
+                  <td className="py-2 text-right">Rp{(item.qty * item.price).toLocaleString()}</td>
+                </tr>
+              ))}
+              <tr className="font-medium">
+                <td colSpan={5} className="py-2 text-right">
+                  {language === "id" ? "Total:" : "总计："}
+                </td>
+                <td className="py-2 text-right">Rp{total.toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {dueDate && (
+            <div>
+              <div className="text-sm text-muted-foreground">{language === "id" ? "Jatuh Tempo" : "到期日"}</div>
+              <div>{dueDate}</div>
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground">{language === "id" ? "Status Pembayaran" : "支付状态"}</div>
+          <div>
+            {paymentStatus === "lunas" ? (
+              <span style={{ color: "green" }}>{language === "id" ? "Lunas" : "已付款"}</span>
+            ) : (
+              <span style={{ color: "red" }}>{language === "id" ? "Belum Lunas" : "未付款"}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mt-8">
+          <div className="text-center">
+            <div className="mb-16">{language === "id" ? "Dibuat Oleh" : "制作人"}</div>
+            <div className="border-t border-black pt-2">(______________)</div>
+          </div>
+          <div className="text-center">
+            <div className="mb-16">{language === "id" ? "Pengantar" : "送货员"}</div>
+            <div className="border-t border-black pt-2">(______________)</div>
+          </div>
+          <div className="text-center">
+            <div className="mb-16">{language === "id" ? "Penerima" : "收货人"}</div>
+            <div className="border-t border-black pt-2">(______________)</div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const SuratJalanPreview = ({
+  language,
+  customers,
+  selectedCustomer,
+  notaDate,
+  notaNumber,
+  items,
+}: {
+  language: "id" | "zh"
+  customers: Customer[]
+  selectedCustomer: string
+  notaDate: string
+  notaNumber: string
+  items: LineItem[]
+}) => {
+  const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer)
+  const showHeader = selectedCustomerObj?.requireHeaderNota !== false
+
+  return (
+    <Card className={"pt-6"}>
+      <CardContent className="space-y-6">
+        <div className="text-center font-bold text-xl underline mb-4">
+          {language === "id" ? "SURAT JALAN" : "送货单"}
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <div className="text-sm text-muted-foreground">{language === "id" ? "Kepada" : "客户"}</div>
+            <div>{customers.find((c) => c._id === selectedCustomer)?.storeName || "Not selected"}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">
+              {language === "id" ? "Tanggal Surat Jalan" : "送货单日期"}
+            </div>
+            <div>
+              {notaDate
+                ? new Date(notaDate)
+                    .toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })
+                    .split("-")
+                    .join("/")
+                : "Not set"}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">
+              {language === "id" ? "Nomor Surat Jalan" : "送货单编号"}
+            </div>
+            <div style={{ color: "red" }}>{notaNumber || "Not set"}</div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 text-sm">#</th>
+                <th className="text-left py-2 text-sm">{language === "id" ? "Check" : "核对"}</th>
+                <th className="text-left py-2 text-sm">{language === "id" ? "Nama Barang" : "商品名称"}</th>
+                <th className="text-left py-2 text-sm">{language === "id" ? "数量" : "Qty"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, index) => (
+                <tr key={item.id} className="border-b last:border-0">
+                  <td className="py-2">{index + 1}</td>
+                  <td className="py-2">
+                    <div className="border border-gray-300 w-5 h-5"></div>
+                  </td>
+                  <td className="py-2">{language === "id" ? item.name : item.namaMandarin}</td>
+                  <td className="py-2">
+                    {item.qty} {item.unit}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mt-8">
+          <div className="text-center">
+            <div className="mb-16">{language === "id" ? "Dibuat Oleh" : "制作人"}</div>
+            <div className="border-t border-black pt-2">(______________)</div>
+          </div>
+          <div className="text-center">
+            <div className="mb-16">{language === "id" ? "Pengantar" : "送货员"}</div>
+            <div className="border-t border-black pt-2">(______________)</div>
+          </div>
+          <div className="text-center">
+            <div className="mb-16">{language === "id" ? "Penerima" : "收货人"}</div>
+            <div className="border-t border-black pt-2">(______________)</div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

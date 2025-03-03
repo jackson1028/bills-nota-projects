@@ -17,7 +17,9 @@ import { toast } from "sonner"
 
 interface LineItem {
   id: number
+  itemId: string
   name: string
+  namaMandarin: string
   qty: number
   price: number
   unit: string
@@ -36,10 +38,18 @@ interface Unit {
   name: string
 }
 
+interface Item {
+  _id: string
+  nama: string
+  namaMandarin: string
+}
+
 export function CreateNota() {
   const [items, setItems] = useState<LineItem[]>([])
   const [newItem, setNewItem] = useState({
+    itemId: "",
     name: "",
+    namaMandarin: "",
     qty: 1,
     price: 0,
     unit: "",
@@ -49,6 +59,7 @@ export function CreateNota() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>("")
   const [customers, setCustomers] = useState<Customer[]>([])
   const [units, setUnits] = useState<Unit[]>([])
+  const [availableItems, setAvailableItems] = useState<Item[]>([])
   const [notaNumber, setNotaNumber] = useState("")
   const [notaDate, setNotaDate] = useState(() => {
     const today = new Date()
@@ -59,6 +70,7 @@ export function CreateNota() {
   const [includeSuratJalan, setIncludeSuratJalan] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [openCustomer, setOpenCustomer] = useState(false)
+  const [openItem, setOpenItem] = useState(false)
 
   // Add a new state to store translated items
   const [translatedItems, setTranslatedItems] = useState<Record<string, string>>({})
@@ -88,50 +100,46 @@ export function CreateNota() {
 
   // Add a function to translate all items
   const translateItems = async () => {
-    if (!isMandarin) return
-
-    const newTranslations: Record<string, string> = { ...translatedItems }
-
-    // Only translate items that haven't been translated yet
-    const untranslatedItems = items.filter((item) => !translatedItems[item.name])
-    console.log(untranslatedItems)
-    if (untranslatedItems.length === 0) return
-
-    try {
-      for (const item of untranslatedItems) {
-        if (!newTranslations[item.name]) {
-          const translatedName = await translateText(item.name, "zh")
-          const translatedUnit = await translateText(item.unit, "zh")
-          newTranslations[item.name] = translatedName
-          newTranslations[item.unit] = translatedUnit
-        }
-      }
-
-      setTranslatedItems(newTranslations)
-    } catch (error) {
-      console.error("Error translating items:", error)
-      toast.error("Error", {
-        description: "Failed to translate items",
-      })
-    }
+    // if (!isMandarin) return
+    // const newTranslations: Record<string, string> = { ...translatedItems }
+    // // Only translate items that haven't been translated yet
+    // const untranslatedItems = items.filter((item) => !translatedItems[item.name])
+    // console.log(untranslatedItems)
+    // if (untranslatedItems.length === 0) return
+    // try {
+    //   for (const item of untranslatedItems) {
+    //     if (!newTranslations[item.name]) {
+    //       const translatedName = await translateText(item.name, "zh")
+    //       const translatedUnit = await translateText(item.unit, "zh")
+    //       newTranslations[item.name] = translatedName
+    //       newTranslations[item.unit] = translatedUnit
+    //     }
+    //   }
+    //   setTranslatedItems(newTranslations)
+    // } catch (error) {
+    //   console.error("Error translating items:", error)
+    //   toast.error("Error", {
+    //     description: "Failed to translate items",
+    //   })
+    // }
   }
 
   useEffect(() => {
-    if (isMandarin && items.length > 0) {
-      translateItems()
-    }
-  }, [isMandarin, items, translateItems])
+    // if (isMandarin && items.length > 0) {
+    //   translateItems()
+    // }
+  }, [isMandarin])
 
   const getItemName = (name: string) => {
-    if (isMandarin && translatedItems[name]) {
-      return translatedItems[name]
-    }
+    // if (isMandarin && translatedItems[name]) {
+    //   return translatedItems[name]
+    // }
     return name
   }
   const getUnitName = (name: string) => {
-    if (isMandarin && translatedItems[name]) {
-      return translatedItems[name]
-    }
+    // if (isMandarin && translatedItems[name]) {
+    //   return translatedItems[name]
+    // }
     return name
   }
 
@@ -170,21 +178,43 @@ export function CreateNota() {
       }
     }
 
+    const fetchItems = async () => {
+      try {
+        const response = await fetch("/api/items")
+        if (!response.ok) {
+          throw new Error("Failed to fetch items")
+        }
+        const data = await response.json()
+        setAvailableItems(data)
+      } catch (error) {
+        console.error("Error fetching items:", error)
+        toast.error("Error", {
+          description: "Failed to fetch items",
+        })
+      }
+    }
+
     fetchCustomers()
     fetchUnits()
+    fetchItems()
   }, [])
 
   const addNewItem = (e?: React.KeyboardEvent<HTMLInputElement>) => {
     if (e && e.key !== "Enter") return
-    if (!newItem.name || newItem.qty <= 0 || !newItem.unit) {
+    if (!newItem.itemId || newItem.qty <= 0 || !newItem.unit) {
       return
     }
+
+    const selectedItem = availableItems.find((item) => item._id === newItem.itemId)
+    if (!selectedItem) return
 
     setItems([
       ...items,
       {
         id: items.length + 1,
-        name: newItem.name,
+        itemId: selectedItem._id,
+        name: selectedItem.nama,
+        namaMandarin: selectedItem.namaMandarin,
         qty: newItem.qty,
         price: newItem.price,
         unit: newItem.unit,
@@ -193,7 +223,9 @@ export function CreateNota() {
 
     // Reset form
     setNewItem({
+      itemId: "",
       name: "",
+      namaMandarin: "",
       qty: 1,
       price: 0,
       unit: "",
@@ -393,7 +425,7 @@ export function CreateNota() {
           <tr>
             <td>${startIndex + index + 1}</td>
             <td><div class="checkbox"></div></td>
-            <td>${isMandarin && translatedItems[item.name] ? translatedItems[item.name] : item.name}</td>
+            <td>${isMandarin ? item.namaMandarin : item.name}</td>
             <td>${item.qty} ${item.unit}</td>
             <td>Rp${item.price.toLocaleString()}</td>
             <td>Rp${(item.qty * item.price).toLocaleString()}</td>
@@ -474,7 +506,7 @@ export function CreateNota() {
           <tr>
             <td>${index + 1}</td>
             <td><div class="checkbox"></div></td>
-            <td>${isMandarin && translatedItems[item.name] ? translatedItems[item.name] : item.name}</td>
+            <td>${isMandarin ? item.namaMandarin : item.name}</td>
             <td>${item.qty} ${item.unit}</td>
           </tr>
         `,
@@ -666,9 +698,9 @@ export function CreateNota() {
                     <td className="py-2">
                       <div className="border border-gray-300 w-4 h-4"></div>
                     </td>
-                    <td className="py-2">{getItemName(item.name)}</td>
+                    <td className="py-2">{isMandarin ? item.namaMandarin : item.name}</td>
                     <td className="py-2">
-                      {item.qty} {getUnitName(item.unit)}
+                      {item.qty} {item.unit}
                     </td>
                     <td className="py-2">Rp{item.price.toLocaleString()}</td>
                     <td className="py-2 text-right">Rp{(item.qty * item.price).toLocaleString()}</td>
@@ -779,9 +811,9 @@ export function CreateNota() {
                     <td className="py-2">
                       <div className="border border-gray-300 w-5 h-5"></div>
                     </td>
-                    <td className="py-2">{getItemName(item.name)}</td>
+                    <td className="py-2">{isMandarin ? item.namaMandarin : item.name}</td>
                     <td className="py-2">
-                      {item.qty} {getItemName(item.unit)}
+                      {item.qty} {item.unit}
                     </td>
                   </tr>
                 ))}
@@ -922,7 +954,7 @@ export function CreateNota() {
                     {items.map((item, index) => (
                       <tr key={item.id} className="border-b last:border-0">
                         <td className="p-3">{index + 1}</td>
-                        <td className="p-3">{getItemName(item.name)}</td>
+                        <td className="p-3">{isMandarin ? item.namaMandarin : item.name}</td>
                         <td className="p-3">{item.qty}</td>
                         <td className="p-3">{item.unit}</td>
                         <td className="p-3">Rp{item.price.toLocaleString()}</td>
@@ -946,13 +978,47 @@ export function CreateNota() {
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div className="space-y-2 sm:col-span-1">
                     <Label htmlFor="item-name">Nama Barang</Label>
-                    <Input
-                      id="item-name"
-                      value={newItem.name}
-                      onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                      onKeyPress={(e) => e.key === "Enter" && addNewItem()}
-                      placeholder="Masukkan nama barang"
-                    />
+                    <Popover open={openItem} onOpenChange={setOpenItem}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openItem}
+                          className="w-full justify-between"
+                        >
+                          {newItem.itemId
+                            ? availableItems.find((item) => item._id === newItem.itemId)?.nama
+                            : "Select item"}
+                          <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search item..." className="h-9" />
+                          <CommandList>
+                            <CommandEmpty>No item found.</CommandEmpty>
+                            <CommandGroup>
+                              {availableItems.map((item) => (
+                                <CommandItem
+                                  key={item._id}
+                                  onSelect={() => {
+                                    setNewItem({
+                                      ...newItem,
+                                      itemId: item._id,
+                                      name: item.nama,
+                                      namaMandarin: item.namaMandarin,
+                                    })
+                                    setOpenItem(false)
+                                  }}
+                                >
+                                  {item.nama} ({item.namaMandarin})
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="item-qty">Qty</Label>
@@ -994,7 +1060,7 @@ export function CreateNota() {
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={() => addNewItem()} disabled={!newItem.name || newItem.qty <= 0 || !newItem.unit}>
+                  <Button onClick={() => addNewItem()} disabled={!newItem.itemId || newItem.qty <= 0 || !newItem.unit}>
                     Add Item
                   </Button>
                 </div>

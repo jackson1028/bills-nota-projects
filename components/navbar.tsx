@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { User, LogOut } from "lucide-react"
+import { User, LogOut, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
@@ -25,7 +25,7 @@ export function Navbar() {
   return (
     <nav className="bg-white text-black shadow-sm">
       <div className="container mx-auto flex justify-between items-center py-4 px-6">
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-4">
           <Link href="/nota" className="text-xl font-bold">
             Toko Yanto
           </Link>
@@ -37,6 +37,9 @@ export function Navbar() {
           </Link>
           <Link href="/units" className="hover:text-gray-600">
             Units
+          </Link>
+          <Link href="/items" className="hover:text-gray-600">
+            Barang
           </Link>
         </div>
         <DropdownMenu>

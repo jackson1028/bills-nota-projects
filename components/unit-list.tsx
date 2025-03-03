@@ -22,7 +22,6 @@ export function UnitList() {
   const [isLoading, setIsLoading] = useState(false)
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  
 
   const fetchUnits = useCallback(async () => {
     setIsLoading(true)

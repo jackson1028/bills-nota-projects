@@ -56,7 +56,7 @@ export function PrintableNota({
           </div>
           <div>
             <div className="text-sm text-muted-foreground">{language === "id" ? "Nomor Nota" : "单据编号"}</div>
-            <div style={{ color: 'red' }}>{notaNumber}</div>
+            <div style={{ color: "red" }}>{notaNumber}</div>
           </div>
         </div>
 

@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
-
 interface CreateUnitProps {
   onUnitCreated: () => void
   onClose: () => void // Added onClose prop
@@ -17,7 +16,6 @@ interface CreateUnitProps {
 export function CreateUnit({ onUnitCreated, onClose }: CreateUnitProps) {
   const [name, setName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,7 +34,7 @@ export function CreateUnit({ onUnitCreated, onClose }: CreateUnitProps) {
         throw new Error("Failed to create unit")
       }
 
-      toast.success("Success",{
+      toast.success("Success", {
         description: "Unit created successfully",
       })
 

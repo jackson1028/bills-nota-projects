@@ -33,7 +33,7 @@ export function CustomerList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState<"all" | "active">("all")
-  
+
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [itemsPerPage, setItemsPerPage] = useState(5)

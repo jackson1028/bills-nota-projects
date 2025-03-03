@@ -22,7 +22,6 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
   const [notaCode, setNotaCode] = useState("")
   const [requireHeaderNota, setRequireHeaderNota] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
-  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

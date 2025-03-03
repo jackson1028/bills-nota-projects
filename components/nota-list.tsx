@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import debounce from "lodash/debounce"
-import { toast } from "sonner";
+import { toast } from "sonner"
 
 interface Nota {
   _id: string
@@ -54,7 +54,7 @@ export function NotaList() {
   const [totalItems, setTotalItems] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [customers, setCustomers] = useState<Customer[]>([])
-  type DateRange = { from: Date | undefined; to?: Date | undefined };
+  type DateRange = { from: Date | undefined; to?: Date | undefined }
   const [createdAtRange, setCreatedAtRange] = useState<DateRange>({
     from: undefined,
     to: undefined,
@@ -211,7 +211,7 @@ export function NotaList() {
 
         printContent += `
     <div class="page ${pageSize}">
-      ${nota.paymentStatus === "lunas" ? '<div class="watermark">LUNAS</div>' : ''}
+      ${nota.paymentStatus === "lunas" ? '<div class="watermark">LUNAS</div>' : ""}
       ${
         showHeader
           ? `
@@ -479,7 +479,7 @@ export function NotaList() {
                         selected={createdAtRange}
                         onSelect={(range) => {
                           if (range) {
-                            setCreatedAtRange(range); // Hanya set state jika range tidak undefined
+                            setCreatedAtRange(range) // Hanya set state jika range tidak undefined
                           }
                         }}
                         numberOfMonths={2}
@@ -520,7 +520,7 @@ export function NotaList() {
                         selected={notaDateRange}
                         onSelect={(range) => {
                           if (range) {
-                            setNotaDateRange(range); // Hanya set state jika range tidak undefined
+                            setNotaDateRange(range) // Hanya set state jika range tidak undefined
                           }
                         }}
                         numberOfMonths={2}
@@ -640,7 +640,7 @@ export function NotaList() {
                             })
                             .split("/")
                             .join("/")}
-                          </td>
+                        </td>
                         <td className="p-3 text-sm text-gray-700">
                           {new Date(nota.notaDate)
                             .toLocaleDateString("id-ID", {
@@ -650,7 +650,7 @@ export function NotaList() {
                             })
                             .split("-")
                             .join("/")}
-                          </td>
+                        </td>
                         <td className="p-3 text-sm text-gray-700">{nota.notaNumber}</td>
                         <td className="p-3 text-sm text-gray-700">Rp{nota.total.toLocaleString()}</td>
                         <td className="p-3">
