@@ -425,7 +425,7 @@ export function CreateNota() {
           <tr>
             <td>${startIndex + index + 1}</td>
             <td><div class="checkbox"></div></td>
-            <td>${isMandarin ? item.namaMandarin : item.name}</td>
+            <td>${isMandarin ? `${item.name} ${item.namaMandarin}` : item.name}</td>
             <td>${item.qty} ${item.unit}</td>
             <td>Rp${item.price.toLocaleString()}</td>
             <td>Rp${(item.qty * item.price).toLocaleString()}</td>
@@ -506,7 +506,7 @@ export function CreateNota() {
           <tr>
             <td>${index + 1}</td>
             <td><div class="checkbox"></div></td>
-            <td>${isMandarin ? item.namaMandarin : item.name}</td>
+            <td>${isMandarin ? `${item.name} ${item.namaMandarin}` : item.name}</td>
             <td>${item.qty} ${item.unit}</td>
           </tr>
         `,
