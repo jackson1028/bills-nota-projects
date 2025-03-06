@@ -382,12 +382,12 @@ export function CreateNota() {
           showHeader
             ? `
               <div class="header">
-                <h1>${isMandarin ? "燕涛商店" : "Toko Yanto"}</h1>
+                <h1>${isMandarin ? "Toko Yanto" : "Toko Yanto"}</h1>
                 <p>
                   ${
                     isMandarin
-                      ? `巴淡岛中心Mitra Raya市场B座05号<br>
-                         电话：082284228888`
+                      ? `Pasar Mitra Raya Block B No. 05, Batam Centre<br>
+                         Hp 082284228888`
                       : `Pasar Mitra Raya Block B No. 05, Batam Centre<br>
                          Hp 082284228888`
                   }
@@ -645,7 +645,7 @@ export function CreateNota() {
       <Card className={!showHeader ? "pt-6" : ""}>
         {showHeader && (
           <CardHeader>
-            <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
+            <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "Toko Yanto"}</CardTitle>
             <p className="text-sm text-muted-foreground">
               {language === "id" ? (
                 <>
@@ -655,7 +655,7 @@ export function CreateNota() {
                 </>
               ) : (
                 <>
-                  巴淡岛中心Mitra Raya市场B座05号
+                  Pasar Mitra Raya Block B No. 05, Batam Centre
                   <br />
                   电话：082284228888
                 </>
@@ -698,7 +698,11 @@ export function CreateNota() {
                     <td className="py-2">
                       <div className="border border-gray-300 w-4 h-4"></div>
                     </td>
-                    <td className="py-2">{isMandarin ? item.namaMandarin : item.name}</td>
+                    {isMandarin ? (
+                      <td className="py-2">{item.name} {item.namaMandarin}</td>
+                    ) : (
+                      <td className="py-2">{item.name}</td>
+                    )}
                     <td className="py-2">
                       {item.qty} {item.unit}
                     </td>
@@ -811,7 +815,11 @@ export function CreateNota() {
                     <td className="py-2">
                       <div className="border border-gray-300 w-5 h-5"></div>
                     </td>
-                    <td className="py-2">{isMandarin ? item.namaMandarin : item.name}</td>
+                    {isMandarin ? (
+                      <td className="py-2">{item.name} {item.namaMandarin}</td>
+                    ) : (
+                      <td className="py-2">{item.name}</td>
+                    )}
                     <td className="py-2">
                       {item.qty} {item.unit}
                     </td>

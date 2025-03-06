@@ -15,7 +15,7 @@ export function SuratJalanPreview({ notaNumber, customerName, notaDate, items, l
   return (
     <div className="max-w-3xl mx-auto bg-white p-8 shadow-md">
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold">{language === "id" ? "Toko Yanto" : "燕涛商店"}</h1>
+        <h1 className="text-2xl font-bold">{language === "id" ? "Toko Yanto" : "Toko Yanto"}</h1>
         <p className="text-sm text-gray-600">
           {language === "id" ? (
             <>

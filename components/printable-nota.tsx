@@ -31,7 +31,7 @@ export function PrintableNota({
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "燕涛商店"}</CardTitle>
+        <CardTitle className="text-xl">{language === "id" ? "Toko Yanto" : "Toko Yanto"}</CardTitle>
         <p className="text-sm text-muted-foreground">
           {language === "id" ? (
             <>
