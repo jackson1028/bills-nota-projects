@@ -13,6 +13,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/nota", request.url))
   }
 
+  
   return NextResponse.next()
 }
 
