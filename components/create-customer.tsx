@@ -73,10 +73,10 @@ export function CreateCustomer({ onCustomerCreated }: CreateCustomerProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
+      {/* <div>
         <Label htmlFor="name">Nama</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-      </div>
+      </div> */}
       <div>
         <Label htmlFor="storeName">Nama Toko</Label>
         <Input id="storeName" value={storeName} onChange={(e) => setStoreName(e.target.value)} required />

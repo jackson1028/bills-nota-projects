@@ -172,7 +172,7 @@ export function CustomerList() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left p-3 text-sm font-medium text-gray-600">Nama</th>
+                  {/* <th className="text-left p-3 text-sm font-medium text-gray-600">Nama</th> */}
                   <th className="text-left p-3 text-sm font-medium text-gray-600">Nama Toko</th>
                   <th className="text-left p-3 text-sm font-medium text-gray-600">Kode Nota</th>
                   <th className="text-left p-3 text-sm font-medium text-gray-600">Status</th>
@@ -182,7 +182,7 @@ export function CustomerList() {
               <tbody>
                 {paginatedCustomers.map((customer) => (
                   <tr key={customer._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="p-3 text-sm text-gray-700">{customer.name}</td>
+                    {/* <td className="p-3 text-sm text-gray-700">{customer.name}</td> */}
                     <td className="p-3 text-sm text-gray-700">{customer.storeName}</td>
                     <td className="p-3 text-sm text-gray-700">{customer.notaCode}</td>
                     <td className="p-3">
