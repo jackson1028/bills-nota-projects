@@ -3,7 +3,7 @@
 import { CommandInput } from "@/components/ui/command"
 
 import { useState, useEffect, useCallback } from "react"
-import { CalendarIcon, Printer, Pencil, Plus, ChevronLeft, ChevronRight, Search, Trash2, X } from "lucide-react"
+import { CalendarIcon, Printer, Pencil, Plus, ChevronLeft, ChevronRight, Search, Trash2, X, FileSpreadsheet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -29,7 +29,7 @@ interface Nota {
   paymentStatus: "lunas" | "belum lunas"
   dueDate?: string
   createdBy: string
-  items?: { name: string; qty: number; price: number; unit: string }[]
+  items?: { name: string; qty: number; price: number; unit: string, namaMandarin:string }[]
   customerId?: string
   customer?: { requireHeaderNota: boolean; storeName: string }
 }
@@ -425,6 +425,138 @@ export function NotaList() {
     setCurrentPage(1)
   }
 
+  const handleDownload = (nota: Nota) => {
+    // Import the xlsx library
+    import("xlsx")
+      .then((XLSX) => {
+        const selectedCustomer = customers.find((c) => c._id === nota.customerId)
+        const customerName = selectedCustomer ? selectedCustomer.storeName : "Unknown"
+
+        // Create a new workbook
+        const wb = XLSX.utils.book_new()
+
+        // ---- SHEET 1: Indonesian Nota ----
+        const indonesianData = [
+          ["Toko Yanto"],
+          ["Pasar Mitra Raya Block B No 05, Batam Centre"],
+          ["Hp 082284228888"],
+          [""],
+          ["Nomor Nota:", nota.notaNumber],
+          ["Customer:", customerName],
+          ["Tanggal Nota:", new Date(nota.notaDate).toLocaleDateString()],
+          ["Jatuh Tempo:", nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"],
+          ["Status Pembayaran:", nota.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"],
+          [""],
+          ["No.", "Nama Barang", "Qty", "Harga", "Jumlah"],
+        ]
+
+        // Add item rows
+        if (nota.items && nota.items.length > 0) {
+          nota.items.forEach((item, index) => {
+            const total = item.qty * item.price
+            indonesianData.push([
+              `${index + 1}`,
+              item.name,
+              `${item.qty} ${item.unit}`,
+              `Rp${item.price.toLocaleString()}`,
+              `Rp${total.toLocaleString()}`,
+            ])
+          })
+        }
+
+        // Add total row
+        indonesianData.push(["", "", "", "Total:", `Rp${nota.total.toLocaleString()}`])
+        indonesianData.push([""])
+        indonesianData.push(["Dibuat Oleh", "Pengantar", "Penerima"])
+        indonesianData.push(["____________", "____________", "____________"])
+
+        // Create worksheet from data
+        const wsIndonesian = XLSX.utils.aoa_to_sheet(indonesianData)
+
+        // ---- SHEET 2: Mandarin Nota ----
+        const mandarinData = [
+          ["燕涛商店"],
+          ["巴淡岛中心Mitra Raya市场B座05号"],
+          ["电话：082284228888"],
+          [""],
+          ["单据编号:", nota.notaNumber],
+          ["客户:", customerName],
+          ["单据日期:", new Date(nota.notaDate).toLocaleDateString()],
+          ["到期日:", nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"],
+          ["支付状态:", nota.paymentStatus === "lunas" ? "已付款" : "未付款"],
+          [""],
+          ["编号", "商品名称", "数量", "价格", "金额"],
+        ]
+
+        // Add item rows in Mandarin
+        if (nota.items && nota.items.length > 0) {
+          nota.items.forEach((item, index) => {
+            const total = item.qty * item.price
+            mandarinData.push([
+              `${index + 1}`,
+              item.namaMandarin || item.name, // Use Mandarin name if available
+              `${item.qty} ${item.unit}`,
+              `Rp${item.price.toLocaleString()}`,
+              `Rp${total.toLocaleString()}`,
+            ])
+          })
+        }
+
+        // Add total row in Mandarin
+        mandarinData.push(["", "", "", "总计:", `Rp${nota.total.toLocaleString()}`])
+        mandarinData.push([""])
+        mandarinData.push(["制作人", "送货员", "收货人"])
+        mandarinData.push(["____________", "____________", "____________"])
+
+        // Create worksheet from Mandarin data
+        const wsMandarin = XLSX.utils.aoa_to_sheet(mandarinData)
+
+        // ---- SHEET 3: Surat Jalan (Delivery Note) ----
+        const suratJalanData = [
+          ["SURAT JALAN"],
+          [""],
+          ["Nomor Surat Jalan:", nota.notaNumber],
+          ["Customer:", customerName],
+          ["Tanggal Surat Jalan:", new Date(nota.notaDate).toLocaleDateString()],
+          [""],
+          ["No.", "Nama Barang", "Qty", "Check"],
+        ]
+
+        // Add item rows for surat jalan
+        if (nota.items && nota.items.length > 0) {
+          nota.items.forEach((item, index) => {
+            suratJalanData.push([
+              `${index + 1}`,
+              item.name,
+              `${item.qty} ${item.unit}`,
+              "", // Empty check column
+            ])
+          })
+        }
+
+        suratJalanData.push([""])
+        suratJalanData.push(["Dibuat Oleh", "Pengantar", "Penerima"])
+        suratJalanData.push(["____________", "____________", "____________"])
+
+        // Create worksheet from surat jalan data
+        const wsSuratJalan = XLSX.utils.aoa_to_sheet(suratJalanData)
+
+        // Add the worksheets to the workbook
+        XLSX.utils.book_append_sheet(wb, wsIndonesian, "Nota Indonesia")
+        XLSX.utils.book_append_sheet(wb, wsMandarin, "Nota 中文")
+        XLSX.utils.book_append_sheet(wb, wsSuratJalan, "Surat Jalan")
+
+        // Generate Excel file and trigger download
+        XLSX.writeFile(wb, `Nota-${nota.notaNumber}.xlsx`)
+      })
+      .catch((error) => {
+        console.error("Error loading xlsx library:", error)
+        toast.error("Error", {
+          description: "Failed to generate Excel file. Please try again.",
+        })
+      })
+  }
+
   return (
     <div>
       <div className="mx-auto space-y-6 sm:space-y-8">
@@ -677,6 +809,14 @@ export function NotaList() {
                               onClick={() => handlePrint(nota)}
                             >
                               <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-800"
+                              onClick={() => handleDownload(nota)}
+                            >
+                              <FileSpreadsheet className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
