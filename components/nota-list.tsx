@@ -426,133 +426,405 @@ export function NotaList() {
   }
 
   const handleDownload = (nota: Nota) => {
-    // Import the xlsx library
-    import("xlsx")
-      .then((XLSX) => {
+    // Dynamically import the required libraries
+    Promise.all([import("jspdf"), import("html2canvas")])
+      .then(([jsPDFModule, html2canvasModule]) => {
+        const jsPDF = jsPDFModule.default
+        const html2canvas = html2canvasModule.default
+
         const selectedCustomer = customers.find((c) => c._id === nota.customerId)
-        const customerName = selectedCustomer ? selectedCustomer.storeName : "Unknown"
+        const showHeader = selectedCustomer?.requireHeaderNota !== false
 
-        // Create a new workbook
-        const wb = XLSX.utils.book_new()
+        // Create a temporary container for rendering the content
+        const container = document.createElement("div")
+        container.style.position = "absolute"
+        container.style.left = "-9999px"
+        container.style.top = "-9999px"
+        document.body.appendChild(container)
 
-        // ---- SHEET 1: Indonesian Nota ----
-        const indonesianData = [
-          ["Toko Yanto"],
-          ["Pasar Mitra Raya Block B No 05, Batam Centre"],
-          ["Hp 082284228888"],
-          [""],
-          ["Nomor Nota:", nota.notaNumber],
-          ["Customer:", customerName],
-          ["Tanggal Nota:", new Date(nota.notaDate).toLocaleDateString()],
-          ["Jatuh Tempo:", nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"],
-          ["Status Pembayaran:", nota.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"],
-          [""],
-          ["No.", "Nama Barang", "Qty", "Harga", "Jumlah"],
-        ]
-
-        // Add item rows
-        if (nota.items && nota.items.length > 0) {
-          nota.items.forEach((item, index) => {
-            const total = item.qty * item.price
-            indonesianData.push([
-              `${index + 1}`,
-              item.name,
-              `${item.qty} ${item.unit}`,
-              `Rp${item.price.toLocaleString()}`,
-              `Rp${total.toLocaleString()}`,
-            ])
-          })
+        // Create the content for Indonesian Nota
+        const indonesianContent = document.createElement("div")
+        indonesianContent.className = "pdf-page"
+        indonesianContent.innerHTML = `
+      <div class="pdf-content">
+        ${nota.paymentStatus === "lunas" ? '<div class="watermark">LUNAS</div>' : ""}
+        ${
+          showHeader
+            ? `
+          <div class="header">
+            <h1>Toko Yanto</h1>
+            <p>
+              Pasar Mitra Raya Block B No. 05, Batam Centre<br>
+              Hp 082284228888
+            </p>
+          </div>
+        `
+            : ""
         }
+        <table class="info-table">
+          <tr>
+            <td><strong>Kepada:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
+            <td><strong>Nomor Nota:</strong> ${nota.notaNumber}</td>
+          </tr>
+          <tr>
+            <td><strong>Tanggal Nota:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
+            <td><strong>Jatuh Tempo:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
+          </tr>
+        </table>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th></th>
+              <th>Nama Barang</th>
+              <th>Qty</th>
+              <th>Harga</th>
+              <th>Jumlah</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              nota.items
+                ?.map(
+                  (item, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td><div class="checkbox"></div></td>
+                <td>${item.name}</td>
+                <td>${item.qty} ${item.unit}</td>
+                <td>Rp${item.price.toLocaleString()}</td>
+                <td>Rp${(item.qty * item.price).toLocaleString()}</td>
+              </tr>
+            `,
+                )
+                .join("") || ""
+            }
+          </tbody>
+        </table>
+        <table class="total-table">
+          <tr>
+            <td colspan="5" class="text-right"><strong>Total:</strong></td>
+            <td><strong>Rp${nota.total.toLocaleString()}</strong></td>
+          </tr>
+        </table>
+        <p><strong>Status Pembayaran:</strong> ${nota.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
+        <div class="signature-section">
+          <div class="signature-box">
+            <p>Dibuat Oleh</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+          <div class="signature-box">
+            <p>Pengantar</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+          <div class="signature-box">
+            <p>Penerima</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+        </div>
+      </div>
+    `
 
-        // Add total row
-        indonesianData.push(["", "", "", "Total:", `Rp${nota.total.toLocaleString()}`])
-        indonesianData.push([""])
-        indonesianData.push(["Dibuat Oleh", "Pengantar", "Penerima"])
-        indonesianData.push(["____________", "____________", "____________"])
-
-        // Create worksheet from data
-        const wsIndonesian = XLSX.utils.aoa_to_sheet(indonesianData)
-
-        // ---- SHEET 2: Mandarin Nota ----
-        const mandarinData = [
-          ["燕涛商店"],
-          ["巴淡岛中心Mitra Raya市场B座05号"],
-          ["电话：082284228888"],
-          [""],
-          ["单据编号:", nota.notaNumber],
-          ["客户:", customerName],
-          ["单据日期:", new Date(nota.notaDate).toLocaleDateString()],
-          ["到期日:", nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"],
-          ["支付状态:", nota.paymentStatus === "lunas" ? "已付款" : "未付款"],
-          [""],
-          ["编号", "商品名称", "数量", "价格", "金额"],
-        ]
-
-        // Add item rows in Mandarin
-        if (nota.items && nota.items.length > 0) {
-          nota.items.forEach((item, index) => {
-            const total = item.qty * item.price
-            mandarinData.push([
-              `${index + 1}`,
-              item.namaMandarin || item.name, // Use Mandarin name if available
-              `${item.qty} ${item.unit}`,
-              `Rp${item.price.toLocaleString()}`,
-              `Rp${total.toLocaleString()}`,
-            ])
-          })
+        // Create the content for Mandarin Nota
+        const mandarinContent = document.createElement("div")
+        mandarinContent.className = "pdf-page"
+        mandarinContent.innerHTML = `
+      <div class="pdf-content">
+        ${nota.paymentStatus === "lunas" ? '<div class="watermark">已付款</div>' : ""}
+        ${
+          showHeader
+            ? `
+          <div class="header">
+            <h1>燕涛商店</h1>
+            <p>
+              巴淡岛中心Mitra Raya市场B座05号<br>
+              电话：082284228888
+            </p>
+          </div>
+        `
+            : ""
         }
+        <table class="info-table">
+          <tr>
+            <td><strong>客户:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
+            <td><strong>单据编号:</strong> ${nota.notaNumber}</td>
+          </tr>
+          <tr>
+            <td><strong>单据日期:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
+            <td><strong>到期日:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
+          </tr>
+        </table>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th></th>
+              <th>商品名称</th>
+              <th>数量</th>
+              <th>价格</th>
+              <th>金额</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              nota.items
+                ?.map(
+                  (item, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td><div class="checkbox"></div></td>
+                <td>${item.namaMandarin || item.name}</td>
+                <td>${item.qty} ${item.unit}</td>
+                <td>Rp${item.price.toLocaleString()}</td>
+                <td>Rp${(item.qty * item.price).toLocaleString()}</td>
+              </tr>
+            `,
+                )
+                .join("") || ""
+            }
+          </tbody>
+        </table>
+        <table class="total-table">
+          <tr>
+            <td colspan="5" class="text-right"><strong>总计:</strong></td>
+            <td><strong>Rp${nota.total.toLocaleString()}</strong></td>
+          </tr>
+        </table>
+        <p><strong>支付状态:</strong> ${nota.paymentStatus === "lunas" ? "已付款" : "未付款"}</p>
+        <div class="signature-section">
+          <div class="signature-box">
+            <p>制作人</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+          <div class="signature-box">
+            <p>送货员</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+          <div class="signature-box">
+            <p>收货人</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+        </div>
+      </div>
+    `
 
-        // Add total row in Mandarin
-        mandarinData.push(["", "", "", "总计:", `Rp${nota.total.toLocaleString()}`])
-        mandarinData.push([""])
-        mandarinData.push(["制作人", "送货员", "收货人"])
-        mandarinData.push(["____________", "____________", "____________"])
+        // Create the content for Surat Jalan
+        const suratJalanContent = document.createElement("div")
+        suratJalanContent.className = "pdf-page"
+        suratJalanContent.innerHTML = `
+      <div class="pdf-content">
+        <div class="document-title">SURAT JALAN</div>
+        <table class="info-table">
+          <tr>
+            <td><strong>Kepada:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
+            <td><strong>Tanggal Surat Jalan:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
+            <td><strong>Nomor Surat Jalan:</strong> ${nota.notaNumber}</td>
+          </tr>
+        </table>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Check</th>
+              <th>Nama Barang</th>
+              <th>Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              nota.items
+                ?.map(
+                  (item, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td><div class="checkbox"></div></td>
+                <td>${item.name}</td>
+                <td>${item.qty} ${item.unit}</td>
+              </tr>
+            `,
+                )
+                .join("") || ""
+            }
+          </tbody>
+        </table>
+        <div class="signature-section">
+          <div class="signature-box">
+            <p>Dibuat Oleh</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+          <div class="signature-box">
+            <p>Pengantar</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+          <div class="signature-box">
+            <p>Penerima</p>
+            <div class="signature-line"></div>
+            <p>(______________)</p>
+          </div>
+        </div>
+      </div>
+    `
 
-        // Create worksheet from Mandarin data
-        const wsMandarin = XLSX.utils.aoa_to_sheet(mandarinData)
+        // Add styling
+        const style = document.createElement("style")
+        style.textContent = `
+      .pdf-page {
+        width: 210mm;
+        padding: 10mm;
+        margin-bottom: 10mm;
+        box-sizing: border-box;
+        background-color: white;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        font-family: Arial, sans-serif;
+        font-size: 10pt;
+        position: relative;
+      }
+      .header {
+        margin-bottom: 10mm;
+      }
+      .header h1 {
+        margin: 0 0 2mm 0;
+        font-size: 14pt;
+      }
+      .header p {
+        margin: 0;
+        line-height: 1.2;
+      }
+      .document-title {
+        font-size: 16pt;
+        font-weight: bold;
+        text-align: center;
+        margin: 5mm 0 10mm 0;
+        text-decoration: underline;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 5mm;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 2mm;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: normal;
+      }
+      .info-table td {
+        border: none;
+        padding: 1mm 0;
+      }
+      .total-table {
+        margin-top: 3mm;
+      }
+      .checkbox {
+        width: 3mm;
+        height: 3mm;
+        border: 0.5pt solid black;
+        display: inline-block;
+      }
+      .signature-section {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10mm;
+      }
+      .signature-box {
+        text-align: center;
+        width: 30%;
+      }
+      .signature-line {
+        border-top: 1px solid black;
+        margin-top: 15mm;
+        width: 100%;
+      }
+      .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 80px;
+        font-weight: 900;
+        color: rgba(0, 150, 0, 0.15);
+        z-index: 9999;
+        pointer-events: none;
+        user-select: none;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        font-family: 'Arial', sans-serif;
+        letter-spacing: 10px;
+        opacity: 0.6;
+      }
+    `
 
-        // ---- SHEET 3: Surat Jalan (Delivery Note) ----
-        const suratJalanData = [
-          ["SURAT JALAN"],
-          [""],
-          ["Nomor Surat Jalan:", nota.notaNumber],
-          ["Customer:", customerName],
-          ["Tanggal Surat Jalan:", new Date(nota.notaDate).toLocaleDateString()],
-          [""],
-          ["No.", "Nama Barang", "Qty", "Check"],
-        ]
+        // Append all elements to the container
+        container.appendChild(style)
+        container.appendChild(indonesianContent)
+        container.appendChild(mandarinContent)
+        container.appendChild(suratJalanContent)
 
-        // Add item rows for surat jalan
-        if (nota.items && nota.items.length > 0) {
-          nota.items.forEach((item, index) => {
-            suratJalanData.push([
-              `${index + 1}`,
-              item.name,
-              `${item.qty} ${item.unit}`,
-              "", // Empty check column
-            ])
+        // Add container to document body
+        document.body.appendChild(container)
+
+        // Initialize PDF document
+        const pdf = new jsPDF("p", "mm", "a4")
+        const pages = [indonesianContent, mandarinContent, suratJalanContent]
+        const pagePromises = pages.map((page, index) => {
+          return html2canvas(page, {
+            scale: 2, // Higher scale for better quality
+            useCORS: true,
+            logging: false,
+          }).then((canvas) => {
+            const imgData = canvas.toDataURL("image/jpeg", 1.0)
+
+            // Add new page for all pages except the first one
+            if (index > 0) {
+              pdf.addPage()
+            }
+
+            // Calculate dimensions to fit the page
+            const imgProps = pdf.getImageProperties(imgData)
+            const pdfWidth = pdf.internal.pageSize.getWidth()
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+
+            pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight)
+
+            return true
           })
-        }
+        })
 
-        suratJalanData.push([""])
-        suratJalanData.push(["Dibuat Oleh", "Pengantar", "Penerima"])
-        suratJalanData.push(["____________", "____________", "____________"])
+        // When all pages are rendered, save the PDF
+        Promise.all(pagePromises)
+          .then(() => {
+            // Remove the temporary container
+            document.body.removeChild(container)
 
-        // Create worksheet from surat jalan data
-        const wsSuratJalan = XLSX.utils.aoa_to_sheet(suratJalanData)
+            // Save the PDF
+            pdf.save(`Nota-${nota.notaNumber}.pdf`)
 
-        // Add the worksheets to the workbook
-        XLSX.utils.book_append_sheet(wb, wsIndonesian, "Nota Indonesia")
-        XLSX.utils.book_append_sheet(wb, wsMandarin, "Nota 中文")
-        XLSX.utils.book_append_sheet(wb, wsSuratJalan, "Surat Jalan")
-
-        // Generate Excel file and trigger download
-        XLSX.writeFile(wb, `Nota-${nota.notaNumber}.xlsx`)
+            toast.success("Success", {
+              description: "PDF downloaded successfully",
+            })
+          })
+          .catch((error) => {
+            console.error("Error generating PDF:", error)
+            document.body.removeChild(container)
+            toast.error("Error", {
+              description: "Failed to generate PDF. Please try again.",
+            })
+          })
       })
       .catch((error) => {
-        console.error("Error loading xlsx library:", error)
+        console.error("Error loading libraries:", error)
         toast.error("Error", {
-          description: "Failed to generate Excel file. Please try again.",
+          description: "Failed to load PDF generation libraries. Please try again.",
         })
       })
   }
