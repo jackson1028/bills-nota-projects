@@ -426,6 +426,9 @@ export function NotaList() {
   }
 
   const handleDownload = (nota: Nota) => {
+    // Show a loading toast
+    const loadingToast = toast.loading("Generating PDF...")
+
     // Dynamically import the required libraries
     Promise.all([import("jspdf"), import("html2canvas")])
       .then(([jsPDFModule, html2canvasModule]) => {
@@ -434,358 +437,492 @@ export function NotaList() {
 
         const selectedCustomer = customers.find((c) => c._id === nota.customerId)
         const showHeader = selectedCustomer?.requireHeaderNota !== false
+        const isA5 = nota.items && nota.items.length <= 10
+        const pageSize = isA5 ? "a5" : "a4"
+        const orientation = "portrait"
 
         // Create a temporary container for rendering the content
         const container = document.createElement("div")
         container.style.position = "absolute"
         container.style.left = "-9999px"
-        container.style.top = "-9999px"
+        container.style.top = "0"
+        container.style.width = isA5 ? "148mm" : "210mm" // A5/A4 width
+        container.style.backgroundColor = "white"
         document.body.appendChild(container)
 
-        // Create the content for Indonesian Nota
-        const indonesianContent = document.createElement("div")
-        indonesianContent.className = "pdf-page"
-        indonesianContent.innerHTML = `
-      <div class="pdf-content">
-        ${nota.paymentStatus === "lunas" ? '<div class="watermark">LUNAS</div>' : ""}
-        ${
-          showHeader
-            ? `
-          <div class="header">
-            <h1>Toko Yanto</h1>
-            <p>
-              Pasar Mitra Raya Block B No. 05, Batam Centre<br>
-              Hp 082284228888
-            </p>
-          </div>
-        `
-            : ""
+        // Generate HTML content for the PDF
+        const itemsPerPage = isA5 ? 10 : 40
+
+        // We'll create 3 pages: Indonesian, Mandarin, and Surat Jalan
+        const pageIds = ["page-id", "page-zh", "page-surat-jalan"]
+
+        // PAGE 1: Indonesian Invoice
+        const pageDiv = document.createElement("div")
+        pageDiv.id = pageIds[0]
+        pageDiv.className = "pdf-page"
+        pageDiv.style.width = isA5 ? "148mm" : "210mm"
+        pageDiv.style.height = isA5 ? "210mm" : "297mm"
+        pageDiv.style.padding = "10mm"
+        pageDiv.style.boxSizing = "border-box"
+        pageDiv.style.position = "relative"
+        pageDiv.style.backgroundColor = "white"
+        pageDiv.style.fontFamily = "Arial, sans-serif"
+        pageDiv.style.fontSize = "8pt"
+        pageDiv.style.display = "block"
+        pageDiv.style.marginBottom = "20px"
+        pageDiv.style.border = "1px solid #ddd"
+
+        // Add watermark for paid invoices
+        if (nota.paymentStatus === "lunas") {
+          const watermark = document.createElement("div")
+          watermark.style.position = "absolute"
+          watermark.style.top = "50%"
+          watermark.style.left = "50%"
+          watermark.style.transform = "translate(-50%, -50%) rotate(-45deg)"
+          watermark.style.fontSize = "120px"
+          watermark.style.fontWeight = "900"
+          watermark.style.color = "rgba(0, 150, 0, 0.15)"
+          watermark.style.zIndex = "9999"
+          watermark.style.pointerEvents = "none"
+          watermark.style.userSelect = "none"
+          watermark.style.textShadow = "2px 2px 4px rgba(0,0,0,0.1)"
+          watermark.style.letterSpacing = "10px"
+          watermark.style.opacity = "0.6"
+          watermark.textContent = "LUNAS"
+          pageDiv.appendChild(watermark)
         }
-        <table class="info-table">
-          <tr>
-            <td><strong>Kepada:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
-            <td><strong>Nomor Nota:</strong> ${nota.notaNumber}</td>
-          </tr>
-          <tr>
-            <td><strong>Tanggal Nota:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
-            <td><strong>Jatuh Tempo:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
-          </tr>
-        </table>
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th></th>
-              <th>Nama Barang</th>
-              <th>Qty</th>
-              <th>Harga</th>
-              <th>Jumlah</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              nota.items
-                ?.map(
-                  (item, index) => `
-              <tr>
-                <td>${index + 1}</td>
-                <td><div class="checkbox"></div></td>
-                <td>${item.name}</td>
-                <td>${item.qty} ${item.unit}</td>
-                <td>Rp${item.price.toLocaleString()}</td>
-                <td>Rp${(item.qty * item.price).toLocaleString()}</td>
-              </tr>
-            `,
-                )
-                .join("") || ""
-            }
-          </tbody>
-        </table>
-        <table class="total-table">
-          <tr>
-            <td colspan="5" class="text-right"><strong>Total:</strong></td>
-            <td><strong>Rp${nota.total.toLocaleString()}</strong></td>
-          </tr>
-        </table>
-        <p><strong>Status Pembayaran:</strong> ${nota.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</p>
-        <div class="signature-section">
-          <div class="signature-box">
-            <p>Dibuat Oleh</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-          <div class="signature-box">
-            <p>Pengantar</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-          <div class="signature-box">
-            <p>Penerima</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-        </div>
-      </div>
-    `
 
-        // Create the content for Mandarin Nota
-        const mandarinContent = document.createElement("div")
-        mandarinContent.className = "pdf-page"
-        mandarinContent.innerHTML = `
-      <div class="pdf-content">
-        ${nota.paymentStatus === "lunas" ? '<div class="watermark">已付款</div>' : ""}
-        ${
-          showHeader
-            ? `
-          <div class="header">
-            <h1>燕涛商店</h1>
-            <p>
-              巴淡岛中心Mitra Raya市场B座05号<br>
-              电话：082284228888
-            </p>
-          </div>
-        `
-            : ""
+        // Add header
+        if (showHeader) {
+          const header = document.createElement("div")
+          header.style.marginBottom = "5mm"
+
+          const title = document.createElement("h1")
+          title.style.margin = "0 0 2mm 0"
+          title.style.fontSize = "12pt"
+          title.textContent = "Toko Yanto"
+
+          const address = document.createElement("p")
+          address.style.margin = "0"
+          address.style.lineHeight = "1.2"
+          address.innerHTML = "Pasar Mitra Raya Block B No. 05, Batam Centre<br>Hp 082284228888"
+
+          header.appendChild(title)
+          header.appendChild(address)
+          pageDiv.appendChild(header)
         }
-        <table class="info-table">
-          <tr>
-            <td><strong>客户:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
-            <td><strong>单据编号:</strong> ${nota.notaNumber}</td>
-          </tr>
-          <tr>
-            <td><strong>单据日期:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
-            <td><strong>到期日:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
-          </tr>
-        </table>
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th></th>
-              <th>商品名称</th>
-              <th>数量</th>
-              <th>价格</th>
-              <th>金额</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              nota.items
-                ?.map(
-                  (item, index) => `
-              <tr>
-                <td>${index + 1}</td>
-                <td><div class="checkbox"></div></td>
-                <td>${item.namaMandarin || item.name}</td>
-                <td>${item.qty} ${item.unit}</td>
-                <td>Rp${item.price.toLocaleString()}</td>
-                <td>Rp${(item.qty * item.price).toLocaleString()}</td>
-              </tr>
-            `,
-                )
-                .join("") || ""
-            }
-          </tbody>
-        </table>
-        <table class="total-table">
-          <tr>
-            <td colspan="5" class="text-right"><strong>总计:</strong></td>
-            <td><strong>Rp${nota.total.toLocaleString()}</strong></td>
-          </tr>
-        </table>
-        <p><strong>支付状态:</strong> ${nota.paymentStatus === "lunas" ? "已付款" : "未付款"}</p>
-        <div class="signature-section">
-          <div class="signature-box">
-            <p>制作人</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-          <div class="signature-box">
-            <p>送货员</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-          <div class="signature-box">
-            <p>收货人</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-        </div>
-      </div>
-    `
 
-        // Create the content for Surat Jalan
-        const suratJalanContent = document.createElement("div")
-        suratJalanContent.className = "pdf-page"
-        suratJalanContent.innerHTML = `
-      <div class="pdf-content">
-        <div class="document-title">SURAT JALAN</div>
-        <table class="info-table">
-          <tr>
-            <td><strong>Kepada:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
-            <td><strong>Tanggal Surat Jalan:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
-            <td><strong>Nomor Surat Jalan:</strong> ${nota.notaNumber}</td>
-          </tr>
-        </table>
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Check</th>
-              <th>Nama Barang</th>
-              <th>Qty</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              nota.items
-                ?.map(
-                  (item, index) => `
-              <tr>
-                <td>${index + 1}</td>
-                <td><div class="checkbox"></div></td>
-                <td>${item.name}</td>
-                <td>${item.qty} ${item.unit}</td>
-              </tr>
-            `,
-                )
-                .join("") || ""
-            }
-          </tbody>
-        </table>
-        <div class="signature-section">
-          <div class="signature-box">
-            <p>Dibuat Oleh</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-          <div class="signature-box">
-            <p>Pengantar</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-          <div class="signature-box">
-            <p>Penerima</p>
-            <div class="signature-line"></div>
-            <p>(______________)</p>
-          </div>
-        </div>
-      </div>
-    `
+        // Add info table
+        const infoTable = document.createElement("table")
+        infoTable.style.width = "100%"
+        infoTable.style.borderCollapse = "collapse"
+        infoTable.style.marginBottom = "3mm"
+        infoTable.innerHTML = `
+        <tr>
+          <td style="border: none; padding: 1mm 0;"><strong>Kepada:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
+          <td style="border: none; padding: 1mm 0;"><strong>Nomor Nota:</strong> ${nota.notaNumber}</td>
+        </tr>
+        <tr>
+          <td style="border: none; padding: 1mm 0;"><strong>Tanggal Nota:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
+          <td style="border: none; padding: 1mm 0;"><strong>Jatuh Tempo:</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
+        </tr>
+      `
+        pageDiv.appendChild(infoTable)
 
-        // Add styling
-        const style = document.createElement("style")
-        style.textContent = `
-      .pdf-page {
-        width: 210mm;
-        padding: 10mm;
-        margin-bottom: 10mm;
-        box-sizing: border-box;
-        background-color: white;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-        font-family: Arial, sans-serif;
-        font-size: 10pt;
-        position: relative;
-      }
-      .header {
-        margin-bottom: 10mm;
-      }
-      .header h1 {
-        margin: 0 0 2mm 0;
-        font-size: 14pt;
-      }
-      .header p {
-        margin: 0;
-        line-height: 1.2;
-      }
-      .document-title {
-        font-size: 16pt;
-        font-weight: bold;
-        text-align: center;
-        margin: 5mm 0 10mm 0;
-        text-decoration: underline;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 5mm;
-      }
-      th, td {
-        border: 1px solid #ddd;
-        padding: 2mm;
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2;
-        font-weight: normal;
-      }
-      .info-table td {
-        border: none;
-        padding: 1mm 0;
-      }
-      .total-table {
-        margin-top: 3mm;
-      }
-      .checkbox {
-        width: 3mm;
-        height: 3mm;
-        border: 0.5pt solid black;
-        display: inline-block;
-      }
-      .signature-section {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10mm;
-      }
-      .signature-box {
-        text-align: center;
-        width: 30%;
-      }
-      .signature-line {
-        border-top: 1px solid black;
-        margin-top: 15mm;
-        width: 100%;
-      }
-      .watermark {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(-45deg);
-        font-size: 80px;
-        font-weight: 900;
-        color: rgba(0, 150, 0, 0.15);
-        z-index: 9999;
-        pointer-events: none;
-        user-select: none;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        font-family: 'Arial', sans-serif;
-        letter-spacing: 10px;
-        opacity: 0.6;
-      }
-    `
+        // Add items table
+        const itemsTable = document.createElement("table")
+        itemsTable.style.width = "100%"
+        itemsTable.style.borderCollapse = "collapse"
+        itemsTable.style.marginBottom = "3mm"
 
-        // Append all elements to the container
-        container.appendChild(style)
-        container.appendChild(indonesianContent)
-        container.appendChild(mandarinContent)
-        container.appendChild(suratJalanContent)
+        // Create table header
+        const thead = document.createElement("thead")
+        thead.innerHTML = `
+        <tr>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">#</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;"></th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">Nama Barang</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">Qty</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">Harga</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">Jumlah</th>
+        </tr>
+      `
+        itemsTable.appendChild(thead)
 
-        // Add container to document body
-        document.body.appendChild(container)
+        // Create table body
+        const tbody = document.createElement("tbody")
+        nota.items?.forEach((item, index) => {
+          const tr = document.createElement("tr")
+          tr.innerHTML = `
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">${index + 1}</td>
+          <td style="border: 1px solid #ddd; padding: 0; text-align: center; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm; position: relative;">
+            <div style="width: 2mm; height: 2mm; border: 0.5pt solid black; display: inline-block; position: relative; top: 0.5mm;"></div>
+          </td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">${item.name}</td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">${item.qty} ${item.unit}</td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">Rp${item.price.toLocaleString()}</td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">Rp${(item.qty * item.price).toLocaleString()}</td>
+        `
+          tbody.appendChild(tr)
+        })
+
+        itemsTable.appendChild(tbody)
+        pageDiv.appendChild(itemsTable)
+
+        // Add total table
+        const totalTable = document.createElement("table")
+        totalTable.style.width = "100%"
+        totalTable.style.borderCollapse = "collapse"
+        totalTable.style.marginTop = "2mm"
+        totalTable.innerHTML = `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: right; font-size: 7pt;" colspan="5"><strong>Total:</strong></td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt;"><strong>Rp${nota.total.toLocaleString()}</strong></td>
+        </tr>
+      `
+        pageDiv.appendChild(totalTable)
+
+        // Payment status
+        const paymentStatus = document.createElement("p")
+        paymentStatus.innerHTML = `<strong>Status Pembayaran:</strong> ${nota.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}`
+        pageDiv.appendChild(paymentStatus)
+
+        // Signature section
+        const signatureSection = document.createElement("div")
+        signatureSection.style.display = "flex"
+        signatureSection.style.justifyContent = "space-between"
+        signatureSection.style.marginTop = "5mm"
+        signatureSection.style.fontSize = "6pt"
+
+        const signatures = ["Dibuat Oleh", "Pengantar", "Penerima"]
+        signatures.forEach((title) => {
+          const signatureBox = document.createElement("div")
+          signatureBox.style.textAlign = "center"
+          signatureBox.style.width = "30%"
+
+          const titleP = document.createElement("p")
+          titleP.textContent = title
+          titleP.style.marginBottom = "16mm"
+
+          const signatureLine = document.createElement("div")
+          signatureLine.style.borderTop = "1px solid black"
+          signatureLine.style.width = "100%"
+
+          const nameP = document.createElement("p")
+          nameP.textContent = "(______________)"
+
+          signatureBox.appendChild(titleP)
+          signatureBox.appendChild(signatureLine)
+          signatureBox.appendChild(nameP)
+          signatureSection.appendChild(signatureBox)
+        })
+
+        pageDiv.appendChild(signatureSection)
+        container.appendChild(pageDiv)
+
+        // PAGE 2: Mandarin Invoice
+        const pageDivZh = document.createElement("div")
+        pageDivZh.id = pageIds[1]
+        pageDivZh.className = "pdf-page"
+        pageDivZh.style.width = isA5 ? "148mm" : "210mm"
+        pageDivZh.style.height = isA5 ? "210mm" : "297mm"
+        pageDivZh.style.padding = "10mm"
+        pageDivZh.style.boxSizing = "border-box"
+        pageDivZh.style.position = "relative"
+        pageDivZh.style.backgroundColor = "white"
+        pageDivZh.style.fontFamily = "Arial, sans-serif"
+        pageDivZh.style.fontSize = "8pt"
+        pageDivZh.style.display = "block"
+        pageDivZh.style.marginBottom = "20px"
+        pageDivZh.style.border = "1px solid #ddd"
+
+        // Add watermark for paid invoices (Mandarin)
+        if (nota.paymentStatus === "lunas") {
+          const watermark = document.createElement("div")
+          watermark.style.position = "absolute"
+          watermark.style.top = "50%"
+          watermark.style.left = "50%"
+          watermark.style.transform = "translate(-50%, -50%) rotate(-45deg)"
+          watermark.style.fontSize = "120px"
+          watermark.style.fontWeight = "900"
+          watermark.style.color = "rgba(0, 150, 0, 0.15)"
+          watermark.style.zIndex = "9999"
+          watermark.style.pointerEvents = "none"
+          watermark.style.userSelect = "none"
+          watermark.style.textShadow = "2px 2px 4px rgba(0,0,0,0.1)"
+          watermark.style.letterSpacing = "10px"
+          watermark.style.opacity = "0.6"
+          watermark.textContent = "已付款" // "PAID" in Mandarin
+          pageDivZh.appendChild(watermark)
+        }
+
+        // Add header (Mandarin)
+        if (showHeader) {
+          const header = document.createElement("div")
+          header.style.marginBottom = "5mm"
+
+          const title = document.createElement("h1")
+          title.style.margin = "0 0 2mm 0"
+          title.style.fontSize = "12pt"
+          title.textContent = "燕涛商店" // "Toko Yanto" in Mandarin
+
+          const address = document.createElement("p")
+          address.style.margin = "0"
+          address.style.lineHeight = "1.2"
+          address.innerHTML = "巴淡岛中心Mitra Raya市场B座05号<br>电话：082284228888"
+
+          header.appendChild(title)
+          header.appendChild(address)
+          pageDivZh.appendChild(header)
+        }
+
+        // Add info table (Mandarin)
+        const infoTableZh = document.createElement("table")
+        infoTableZh.style.width = "100%"
+        infoTableZh.style.borderCollapse = "collapse"
+        infoTableZh.style.marginBottom = "3mm"
+        infoTableZh.innerHTML = `
+        <tr>
+          <td style="border: none; padding: 1mm 0;"><strong>客户：</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
+          <td style="border: none; padding: 1mm 0;"><strong>单据编号：</strong> ${nota.notaNumber}</td>
+        </tr>
+        <tr>
+          <td style="border: none; padding: 1mm 0;"><strong>单据日期：</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
+          <td style="border: none; padding: 1mm 0;"><strong>到期日：</strong> ${nota.dueDate ? new Date(nota.dueDate).toLocaleDateString() : "-"}</td>
+        </tr>
+      `
+        pageDivZh.appendChild(infoTableZh)
+
+        // Add items table (Mandarin)
+        const itemsTableZh = document.createElement("table")
+        itemsTableZh.style.width = "100%"
+        itemsTableZh.style.borderCollapse = "collapse"
+        itemsTableZh.style.marginBottom = "3mm"
+
+        // Create table header (Mandarin)
+        const theadZh = document.createElement("thead")
+        theadZh.innerHTML = `
+        <tr>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">#</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;"></th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">商品名称</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">数量</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">价格</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">金额</th>
+        </tr>
+      `
+        itemsTableZh.appendChild(theadZh)
+
+        // Create table body (Mandarin)
+        const tbodyZh = document.createElement("tbody")
+        nota.items?.forEach((item, index) => {
+          const tr = document.createElement("tr")
+          tr.innerHTML = `
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">${index + 1}</td>
+          <td style="border: 1px solid #ddd; padding: 0; text-align: center; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm; position: relative;">
+            <div style="width: 2mm; height: 2mm; border: 0.5pt solid black; display: inline-block; position: relative; top: 0.5mm;"></div>
+          </td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">${item.namaMandarin || item.name}</td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">${item.qty} ${item.unit}</td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">Rp${item.price.toLocaleString()}</td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">Rp${(item.qty * item.price).toLocaleString()}</td>
+        `
+          tbodyZh.appendChild(tr)
+        })
+
+        itemsTableZh.appendChild(tbodyZh)
+        pageDivZh.appendChild(itemsTableZh)
+
+        // Add total table (Mandarin)
+        const totalTableZh = document.createElement("table")
+        totalTableZh.style.width = "100%"
+        totalTableZh.style.borderCollapse = "collapse"
+        totalTableZh.style.marginTop = "2mm"
+        totalTableZh.innerHTML = `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: right; font-size: 7pt;" colspan="5"><strong>总计：</strong></td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt;"><strong>Rp${nota.total.toLocaleString()}</strong></td>
+        </tr>
+      `
+        pageDivZh.appendChild(totalTableZh)
+
+        // Payment status (Mandarin)
+        const paymentStatusZh = document.createElement("p")
+        paymentStatusZh.innerHTML = `<strong>支付状态：</strong> ${nota.paymentStatus === "lunas" ? "已付款" : "未付款"}`
+        pageDivZh.appendChild(paymentStatusZh)
+
+        // Signature section (Mandarin)
+        const signatureSectionZh = document.createElement("div")
+        signatureSectionZh.style.display = "flex"
+        signatureSectionZh.style.justifyContent = "space-between"
+        signatureSectionZh.style.marginTop = "5mm"
+        signatureSectionZh.style.fontSize = "6pt"
+
+        const signaturesZh = ["制作人", "送货员", "收货人"]
+        signaturesZh.forEach((title) => {
+          const signatureBox = document.createElement("div")
+          signatureBox.style.textAlign = "center"
+          signatureBox.style.width = "30%"
+
+          const titleP = document.createElement("p")
+          titleP.textContent = title
+          titleP.style.marginBottom = "16mm"
+
+          const signatureLine = document.createElement("div")
+          signatureLine.style.borderTop = "1px solid black"
+          signatureLine.style.width = "100%"
+
+          const nameP = document.createElement("p")
+          nameP.textContent = "(______________)"
+
+          signatureBox.appendChild(titleP)
+          signatureBox.appendChild(signatureLine)
+          signatureBox.appendChild(nameP)
+          signatureSectionZh.appendChild(signatureBox)
+        })
+
+        pageDivZh.appendChild(signatureSectionZh)
+        container.appendChild(pageDivZh)
+
+        // PAGE 3: Surat Jalan (Delivery Note)
+        const pageDivSJ = document.createElement("div")
+        pageDivSJ.id = pageIds[2]
+        pageDivSJ.className = "pdf-page"
+        pageDivSJ.style.width = isA5 ? "148mm" : "210mm"
+        pageDivSJ.style.height = isA5 ? "210mm" : "297mm"
+        pageDivSJ.style.padding = "10mm"
+        pageDivSJ.style.boxSizing = "border-box"
+        pageDivSJ.style.position = "relative"
+        pageDivSJ.style.backgroundColor = "white"
+        pageDivSJ.style.fontFamily = "Arial, sans-serif"
+        pageDivSJ.style.fontSize = "8pt"
+        pageDivSJ.style.display = "block"
+        pageDivSJ.style.marginBottom = "20px"
+        pageDivSJ.style.border = "1px solid #ddd"
+
+        // Add title for Surat Jalan
+        const sjTitle = document.createElement("div")
+        sjTitle.style.textAlign = "center"
+        sjTitle.style.marginBottom = "10mm"
+        sjTitle.style.fontWeight = "bold"
+        sjTitle.style.fontSize = "14pt"
+        sjTitle.style.textDecoration = "underline"
+        sjTitle.textContent = "SURAT JALAN"
+        pageDivSJ.appendChild(sjTitle)
+
+        // Add info table for Surat Jalan
+        const infoTableSJ = document.createElement("table")
+        infoTableSJ.style.width = "100%"
+        infoTableSJ.style.borderCollapse = "collapse"
+        infoTableSJ.style.marginBottom = "5mm"
+        infoTableSJ.innerHTML = `
+        <tr>
+          <td style="border: none; padding: 1mm 0;"><strong>Kepada:</strong> ${selectedCustomer ? selectedCustomer.storeName : "Unknown"}</td>
+          <td style="border: none; padding: 1mm 0;"><strong>Tanggal Surat Jalan:</strong> ${new Date(nota.notaDate).toLocaleDateString()}</td>
+          <td style="border: none; padding: 1mm 0;"><strong>Nomor Surat Jalan:</strong> ${nota.notaNumber}</td>
+        </tr>
+      `
+        pageDivSJ.appendChild(infoTableSJ)
+
+        // Add items table for Surat Jalan (simplified, no prices)
+        const itemsTableSJ = document.createElement("table")
+        itemsTableSJ.style.width = "100%"
+        itemsTableSJ.style.borderCollapse = "collapse"
+        itemsTableSJ.style.marginBottom = "3mm"
+
+        // Create table header for Surat Jalan
+        const theadSJ = document.createElement("thead")
+        theadSJ.innerHTML = `
+        <tr>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal; width: 5mm;">#</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal; width: 8mm;">Check</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal;">Nama Barang</th>
+          <th style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; background-color: #f2f2f2; font-weight: normal; width: 20mm;">Qty</th>
+        </tr>
+      `
+        itemsTableSJ.appendChild(theadSJ)
+
+        // Create table body for Surat Jalan
+        const tbodySJ = document.createElement("tbody")
+        nota.items?.forEach((item, index) => {
+          const tr = document.createElement("tr")
+          tr.innerHTML = `
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm; width: 5mm;">${index + 1}</td>
+          <td style="border: 1px solid #ddd; padding: 0; text-align: center; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm; position: relative; width: 8mm;">
+            <div style="width: 2mm; height: 2mm; border: 0.5pt solid black; display: inline-block; position: relative; top: 0.5mm;"></div>
+          </td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm;">${item.name}</td>
+          <td style="border: 1px solid #ddd; padding: 2mm 1mm; text-align: left; font-size: 7pt; vertical-align: middle; line-height: 1.2; height: 5mm; width: 20mm;">${item.qty} ${item.unit}</td>
+        `
+          tbodySJ.appendChild(tr)
+        })
+
+        itemsTableSJ.appendChild(tbodySJ)
+        pageDivSJ.appendChild(itemsTableSJ)
+
+        // Signature section for Surat Jalan
+        const signatureSectionSJ = document.createElement("div")
+        signatureSectionSJ.style.display = "flex"
+        signatureSectionSJ.style.justifyContent = "space-between"
+        signatureSectionSJ.style.marginTop = "10mm"
+        signatureSectionSJ.style.fontSize = "6pt"
+
+        const signaturesSJ = ["Dibuat Oleh", "Pengantar", "Penerima"]
+        signaturesSJ.forEach((title) => {
+          const signatureBox = document.createElement("div")
+          signatureBox.style.textAlign = "center"
+          signatureBox.style.width = "30%"
+
+          const titleP = document.createElement("p")
+          titleP.textContent = title
+          titleP.style.marginBottom = "16mm"
+
+          const signatureLine = document.createElement("div")
+          signatureLine.style.borderTop = "1px solid black"
+          signatureLine.style.width = "100%"
+
+          const nameP = document.createElement("p")
+          nameP.textContent = "(______________)"
+
+          signatureBox.appendChild(titleP)
+          signatureBox.appendChild(signatureLine)
+          signatureBox.appendChild(nameP)
+          signatureSectionSJ.appendChild(signatureBox)
+        })
+
+        pageDivSJ.appendChild(signatureSectionSJ)
+        container.appendChild(pageDivSJ)
 
         // Initialize PDF document
-        const pdf = new jsPDF("p", "mm", "a4")
-        const pages = [indonesianContent, mandarinContent, suratJalanContent]
-        const pagePromises = pages.map((page, index) => {
-          return html2canvas(page, {
+        const pdf = new jsPDF(orientation, "mm", pageSize)
+
+        // Function to process each page
+        const processPage = (pageIndex) => {
+          if (pageIndex >= pageIds.length) {
+            // All pages processed, save the PDF
+            pdf.save(`Nota-${nota.notaNumber}.pdf`)
+            document.body.removeChild(container)
+            toast.dismiss(loadingToast)
+            toast.success("PDF downloaded successfully")
+            return
+          }
+
+          const pageElement = document.getElementById(pageIds[pageIndex])
+          if (!pageElement) {
+            processPage(pageIndex + 1)
+            return
+          }
+
+          html2canvas(pageElement, {
             scale: 2, // Higher scale for better quality
             useCORS: true,
             logging: false,
+            backgroundColor: "#FFFFFF",
           }).then((canvas) => {
             const imgData = canvas.toDataURL("image/jpeg", 1.0)
 
             // Add new page for all pages except the first one
-            if (index > 0) {
+            if (pageIndex > 0) {
               pdf.addPage()
             }
 
@@ -796,39 +933,21 @@ export function NotaList() {
 
             pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight)
 
-            return true
+            // Process next page
+            processPage(pageIndex + 1)
           })
-        })
+        }
 
-        // When all pages are rendered, save the PDF
-        Promise.all(pagePromises)
-          .then(() => {
-            // Remove the temporary container
-            document.body.removeChild(container)
-
-            // Save the PDF
-            pdf.save(`Nota-${nota.notaNumber}.pdf`)
-
-            toast.success("Success", {
-              description: "PDF downloaded successfully",
-            })
-          })
-          .catch((error) => {
-            console.error("Error generating PDF:", error)
-            document.body.removeChild(container)
-            toast.error("Error", {
-              description: "Failed to generate PDF. Please try again.",
-            })
-          })
+        // Start processing pages
+        processPage(0)
       })
       .catch((error) => {
-        console.error("Error loading libraries:", error)
-        toast.error("Error", {
-          description: "Failed to load PDF generation libraries. Please try again.",
-        })
+        console.error("Error generating PDF:", error)
+        toast.dismiss(loadingToast)
+        toast.error("Failed to generate PDF. Please try again.")
       })
   }
-
+  
   return (
     <div>
       <div className="mx-auto space-y-6 sm:space-y-8">
