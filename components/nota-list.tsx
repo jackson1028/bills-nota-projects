@@ -897,7 +897,7 @@ export function NotaList() {
         const pdf = new jsPDF(orientation, "mm", pageSize)
 
         // Function to process each page
-        const processPage = (pageIndex) => {
+        const processPage = (pageIndex: any) => {
           if (pageIndex >= pageIds.length) {
             // All pages processed, save the PDF
             pdf.save(`Nota-${nota.notaNumber}.pdf`)
@@ -947,7 +947,7 @@ export function NotaList() {
         toast.error("Failed to generate PDF. Please try again.")
       })
   }
-  
+
   return (
     <div>
       <div className="mx-auto space-y-6 sm:space-y-8">

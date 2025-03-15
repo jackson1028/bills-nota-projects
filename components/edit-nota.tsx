@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { toast } from "sonner"
+import { generatePDF } from "./utils/pdf-generator"
 
 interface LineItem {
   id: number
@@ -257,6 +258,7 @@ export function EditNota({ notaId }: { notaId: string }) {
     }
   }
 
+  // Update the handlePublishNota function to ensure customers are available before generating PDF
   const handlePublishNota = async () => {
     if (total === 0) {
       toast.error("Error", {
@@ -293,6 +295,37 @@ export function EditNota({ notaId }: { notaId: string }) {
         description: "Nota published successfully",
       })
 
+      // Auto-generate PDF for published nota
+      const publishedNota = {
+        _id: notaId,
+        notaNumber,
+        notaDate,
+        dueDate,
+        paymentStatus,
+        items,
+        total,
+        customerId: selectedCustomer,
+      }
+
+      // Show a loading toast for PDF generation
+      const pdfLoadingToast = toast.loading("Generating PDF...")
+
+      // Make sure customers array is available before generating PDF
+      if (customers && customers.length > 0) {
+        try {
+          await generatePDF(publishedNota, customers, pdfLoadingToast)
+          toast.success("PDF generated successfully!")
+        } catch (error) {
+          console.error("Error generating PDF:", error)
+          toast.error("Failed to generate PDF. Please try again.")
+        }
+      } else {
+        toast.dismiss(pdfLoadingToast)
+        toast.error("Failed to generate PDF: Customer data not available")
+        console.error("Customer data not available for PDF generation")
+      }
+
+      // Redirect to the nota list page
       router.push("/nota")
     } catch (error) {
       console.error("Error publishing nota:", error)

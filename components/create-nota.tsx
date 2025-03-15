@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { toast } from "sonner"
+// Add this import at the top of the file
+import { generatePDF } from "./utils/pdf-generator"
 
 interface LineItem {
   id: number
@@ -277,6 +279,7 @@ export function CreateNota() {
     }
   }
 
+  // Update the handleCreateNota function to ensure customers are available before generating PDF
   const handleCreateNota = async (status: "draft" | "terbit") => {
     if (!selectedCustomer) {
       toast.error("Error", {
@@ -338,12 +341,46 @@ export function CreateNota() {
         await updateLastNotaNumber(customer.notaCode, newNumber)
       }
 
-      toast.success("Success", {
-        description: `Nota ${status === "draft" ? "saved as draft" : "terbit"} successfully`,
-      })
+      if (status === "terbit") {
+        toast.success("Success", {
+          description: `Nota terbit successfully`,
+        })
 
-      // Redirect to the nota list page
-      router.push("/nota")
+        // Auto-generate PDF for published nota
+        const createdNotaWithItems = {
+          ...createdNota,
+          items: items,
+          customerId: selectedCustomer,
+        }
+
+        // Show a loading toast for PDF generation
+        const pdfLoadingToast = toast.loading("Generating PDF...")
+
+        // Make sure customers array is available before generating PDF
+        if (customers && customers.length > 0) {
+          try {
+            await generatePDF(createdNotaWithItems, customers, pdfLoadingToast)
+            toast.success("PDF generated successfully!")
+          } catch (error) {
+            console.error("Error generating PDF:", error)
+            toast.error("Failed to generate PDF. Please try again.")
+          }
+        } else {
+          toast.dismiss(pdfLoadingToast)
+          toast.error("Failed to generate PDF: Customer data not available")
+          console.error("Customer data not available for PDF generation")
+        }
+
+        // Redirect to the nota list page
+        router.push("/nota")
+      } else {
+        toast.success("Success", {
+          description: `Nota ${status === "draft" ? "saved as draft" : "terbit"} successfully`,
+        })
+
+        // Redirect to the nota list page
+        router.push("/nota")
+      }
     } catch (error) {
       console.error("Error creating nota:", error)
       toast.error("Error", {
