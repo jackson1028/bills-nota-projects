@@ -294,12 +294,12 @@ export function generatePDF(nota: Nota, customers: Customer[] = [], loadingToast
         const title = document.createElement("h1")
         title.style.margin = "0 0 2mm 0"
         title.style.fontSize = "12pt"
-        title.textContent = "燕涛商店" // "Toko Yanto" in Mandarin
+        title.textContent = "Toko Yanto" // "Toko Yanto" in Mandarin
 
         const address = document.createElement("p")
         address.style.margin = "0"
         address.style.lineHeight = "1.2"
-        address.innerHTML = "巴淡岛中心Mitra Raya市场B座05号<br>电话：082284228888"
+        address.innerHTML = "Pasar Mitra Raya Block B No. 05, Batam Centre<br>电话：082284228888"
 
         header.appendChild(title)
         header.appendChild(address)
