@@ -665,7 +665,7 @@ export function NotaList() {
           title.style.margin = "0 0 2mm 0"
           title.style.fontSize = "12pt"
           title.textContent = "Toko Yanto" // "Toko Yanto" in Mandarin
-
+ 
           const address = document.createElement("p")
           address.style.margin = "0"
           address.style.lineHeight = "1.2"
