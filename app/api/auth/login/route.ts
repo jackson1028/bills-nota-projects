@@ -4,8 +4,8 @@ import { compare } from "bcryptjs"
 const users = [
   {
     id: "1",
-    email: "bill@gmail.com",
-    password: "$2y$10$aDlF6u8Hv/uGyH4B6U7tUeC7qzzXSWdj6DFNl/KTfLQEa9EAGYcni", // hashed version of "Admin123!"
+    email: "yantosupplier@gmail.com",
+    password: "$2a$12$Wn/S7kZmBFVqaXO59I6v8.PWyfSrxODulicbEm.AbujcDqzvlbW8i", // hashed version of "Admin123!"
   },
 ]
 
