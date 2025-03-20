@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Printer, X, Search } from "lucide-react"
+import { Printer, X, Search, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -65,6 +65,7 @@ export function EditNota({ notaId }: { notaId: string }) {
     price: 0,
     unit: "",
   })
+  const [editingItemId, setEditingItemId] = useState<number | null>(null)
 
   const [isMandarin, setIsMandarin] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<string>("")
@@ -166,7 +167,8 @@ export function EditNota({ notaId }: { notaId: string }) {
     }
   }, [nota])
 
-  const addNewItem = () => {
+  const addNewItem = (e?: React.MouseEvent | React.KeyboardEvent<HTMLInputElement>) => {
+    if (e && 'key' in e && e.key !== "Enter") return
     if (!newItem.itemId || newItem.qty <= 0 || !newItem.unit) {
       return
     }
@@ -174,18 +176,39 @@ export function EditNota({ notaId }: { notaId: string }) {
     const selectedItem = availableItems.find((item) => item._id === newItem.itemId)
     if (!selectedItem) return
 
-    setItems([
-      ...items,
-      {
-        id: items.length + 1,
-        itemId: selectedItem._id,
-        name: selectedItem.nama,
-        namaMandarin: selectedItem.namaMandarin,
-        qty: newItem.qty,
-        price: newItem.price,
-        unit: newItem.unit,
-      },
-    ])
+    if (editingItemId !== null) {
+      // Update existing item
+      setItems(
+        items.map((item) =>
+          item.id === editingItemId
+            ? {
+                ...item,
+                itemId: selectedItem._id,
+                name: selectedItem.nama,
+                namaMandarin: selectedItem.namaMandarin,
+                qty: newItem.qty,
+                price: newItem.price,
+                unit: newItem.unit,
+              }
+            : item
+        )
+      )
+      setEditingItemId(null)
+    } else {
+      // Add new item
+      setItems([
+        ...items,
+        {
+          id: items.length + 1,
+          itemId: selectedItem._id,
+          name: selectedItem.nama,
+          namaMandarin: selectedItem.namaMandarin,
+          qty: newItem.qty,
+          price: newItem.price,
+          unit: newItem.unit,
+        },
+      ])
+    }
 
     setNewItem({
       itemId: "",
@@ -201,6 +224,36 @@ export function EditNota({ notaId }: { notaId: string }) {
 
   const removeItem = (id: number) => {
     setItems(items.filter((item) => item.id !== id))
+  }
+
+  const editItem = (id: number) => {
+    // If clicking the same item that's already being edited, cancel edit mode
+    if (editingItemId === id) {
+      setEditingItemId(null);
+      // Reset form
+      setNewItem({
+        itemId: "",
+        name: "",
+        namaMandarin: "",
+        qty: 1,
+        price: 0,
+        unit: "",
+      });
+      return;
+    }
+    
+    const itemToEdit = items.find((item) => item.id === id)
+    if (!itemToEdit) return
+
+    setNewItem({
+      itemId: itemToEdit.itemId,
+      name: itemToEdit.name,
+      namaMandarin: itemToEdit.namaMandarin,
+      qty: itemToEdit.qty,
+      price: itemToEdit.price,
+      unit: itemToEdit.unit,
+    })
+    setEditingItemId(id)
   }
 
   const handleUpdateNota = async () => {
@@ -795,14 +848,24 @@ export function EditNota({ notaId }: { notaId: string }) {
                         <td className="p-3">{item.unit}</td>
                         <td className="p-3">Rp{item.price.toLocaleString()}</td>
                         <td className="p-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 h-8 w-8 p-0"
-                            onClick={() => removeItem(item.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-500 h-8 w-8 p-0"
+                              onClick={() => editItem(item.id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 h-8 w-8 p-0"
+                              onClick={() => removeItem(item.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -893,9 +956,14 @@ export function EditNota({ notaId }: { notaId: string }) {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <Button onClick={addNewItem} disabled={!newItem.itemId || newItem.qty <= 0 || !newItem.unit}>
-                    Add Item
+                <div className="sm:col-span-1 flex items-end">
+                  <Button
+                    type="button"
+                    onClick={addNewItem}
+                    className="w-full"
+                    disabled={!newItem.itemId || newItem.qty <= 0 || !newItem.unit}
+                  >
+                    {editingItemId !== null ? "Update Item" : "Add Item"}
                   </Button>
                 </div>
               </div>
