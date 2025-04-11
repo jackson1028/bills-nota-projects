@@ -1134,7 +1134,7 @@ export function CreateNota() {
                       type="number"
                       min="1"
                       value={newItem.qty}
-                      onChange={(e) => setNewItem({ ...newItem, qty: Number.parseInt(e.target.value) || 0 })}
+                      onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 0 })}
                       onKeyPress={(e) => e.key === "Enter" && addNewItem()}
                     />
                   </div>
