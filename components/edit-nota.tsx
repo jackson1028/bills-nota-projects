@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Printer, X, Search, Pencil } from "lucide-react"
@@ -15,7 +17,7 @@ import { toast } from "sonner"
 import { generatePDF } from "./utils/pdf-generator"
 
 interface LineItem {
-  id: number
+  id: string // Changed from number to string for better uniqueness
   itemId: string
   name: string
   namaMandarin: string
@@ -65,7 +67,7 @@ export function EditNota({ notaId }: { notaId: string }) {
     price: 0,
     unit: "",
   })
-  const [editingItemId, setEditingItemId] = useState<number | null>(null)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
 
   const [isMandarin, setIsMandarin] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<string>("")
@@ -91,8 +93,15 @@ export function EditNota({ notaId }: { notaId: string }) {
         throw new Error("Failed to fetch nota")
       }
       const data = await response.json()
+
+      // Ensure each item has a unique string ID
+      const itemsWithUniqueIds = data.items.map((item: any) => ({
+        ...item,
+        id: item.id ? String(item.id) : crypto.randomUUID(),
+      }))
+
       setNota(data)
-      setItems(data.items)
+      setItems(itemsWithUniqueIds)
       setSelectedCustomer(data.customerId)
       setNotaNumber(data.notaNumber)
       setNotaDate(new Date(data.notaDate).toISOString().split("T")[0])
@@ -168,7 +177,7 @@ export function EditNota({ notaId }: { notaId: string }) {
   }, [nota])
 
   const addNewItem = (e?: React.MouseEvent | React.KeyboardEvent<HTMLInputElement>) => {
-    if (e && 'key' in e && e.key !== "Enter") return
+    if (e && "key" in e && e.key !== "Enter") return
     if (!newItem.itemId || newItem.qty <= 0 || !newItem.unit) {
       return
     }
@@ -177,7 +186,7 @@ export function EditNota({ notaId }: { notaId: string }) {
     if (!selectedItem) return
 
     if (editingItemId !== null) {
-      // Update existing item
+      // Update existing item - using exact ID match
       setItems(
         items.map((item) =>
           item.id === editingItemId
@@ -190,16 +199,16 @@ export function EditNota({ notaId }: { notaId: string }) {
                 price: newItem.price,
                 unit: newItem.unit,
               }
-            : item
-        )
+            : item,
+        ),
       )
       setEditingItemId(null)
     } else {
-      // Add new item
+      // Add new item with a unique ID using crypto.randomUUID()
       setItems([
         ...items,
         {
-          id: items.length + 1,
+          id: crypto.randomUUID(),
           itemId: selectedItem._id,
           name: selectedItem.nama,
           namaMandarin: selectedItem.namaMandarin,
@@ -222,14 +231,14 @@ export function EditNota({ notaId }: { notaId: string }) {
 
   const total = items.reduce((sum, item) => sum + item.qty * item.price, 0)
 
-  const removeItem = (id: number) => {
+  const removeItem = (id: string) => {
     setItems(items.filter((item) => item.id !== id))
   }
 
-  const editItem = (id: number) => {
+  const editItem = (id: string) => {
     // If clicking the same item that's already being edited, cancel edit mode
     if (editingItemId === id) {
-      setEditingItemId(null);
+      setEditingItemId(null)
       // Reset form
       setNewItem({
         itemId: "",
@@ -238,10 +247,10 @@ export function EditNota({ notaId }: { notaId: string }) {
         qty: 1,
         price: 0,
         unit: "",
-      });
-      return;
+      })
+      return
     }
-    
+
     const itemToEdit = items.find((item) => item.id === id)
     if (!itemToEdit) return
 
@@ -274,6 +283,13 @@ export function EditNota({ notaId }: { notaId: string }) {
     setIsLoading(true)
 
     try {
+      // Convert items to the format expected by the API
+      // If the backend expects numeric IDs, we need to handle that here
+      const itemsForApi = items.map((item, index) => ({
+        ...item,
+        id: index + 1, // Use sequential numbers for the API if needed
+      }))
+
       const response = await fetch(`/api/notas/${notaId}`, {
         method: "PUT",
         headers: {
@@ -282,7 +298,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         body: JSON.stringify({
           customerId: selectedCustomer,
           notaNumber,
-          items,
+          items: itemsForApi,
           total,
           notaDate,
           dueDate,
@@ -311,7 +327,6 @@ export function EditNota({ notaId }: { notaId: string }) {
     }
   }
 
-  // Update the handlePublishNota function to ensure customers are available before generating PDF
   const handlePublishNota = async () => {
     if (total === 0) {
       toast.error("Error", {
@@ -323,6 +338,12 @@ export function EditNota({ notaId }: { notaId: string }) {
     setIsLoading(true)
 
     try {
+      // Convert items to the format expected by the API
+      const itemsForApi = items.map((item, index) => ({
+        ...item,
+        id: index + 1, // Use sequential numbers for the API if needed
+      }))
+
       const response = await fetch(`/api/notas/${notaId}`, {
         method: "PUT",
         headers: {
@@ -331,7 +352,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         body: JSON.stringify({
           customerId: selectedCustomer,
           notaNumber,
-          items,
+          items: itemsForApi,
           total,
           notaDate,
           dueDate,
@@ -355,7 +376,7 @@ export function EditNota({ notaId }: { notaId: string }) {
         notaDate,
         dueDate,
         paymentStatus,
-        items,
+        items: itemsForApi,
         total,
         customerId: selectedCustomer,
       }
@@ -1142,10 +1163,12 @@ const NotaPreview = ({
                     <div className="border border-gray-300 w-4 h-4"></div>
                   </td>
                   {language === "id" ? (
-                      <td className="py-2">{item.name}</td>
-                    ) : (
-                      <td className="py-2">{item.name} {item.namaMandarin}</td>
-                    )}
+                    <td className="py-2">{item.name}</td>
+                  ) : (
+                    <td className="py-2">
+                      {item.name} {item.namaMandarin}
+                    </td>
+                  )}
                   <td className="py-2">
                     {item.qty} {item.unit}
                   </td>
@@ -1262,7 +1285,7 @@ const SuratJalanPreview = ({
                 <th className="text-left py-2 text-sm">#</th>
                 <th className="text-left py-2 text-sm">{language === "id" ? "Check" : "核对"}</th>
                 <th className="text-left py-2 text-sm">{language === "id" ? "Nama Barang" : "商品名称"}</th>
-                <th className="text-left py-2 text-sm">{language === "id" ? "数量" : "Qty"}</th>
+                <th className="text-left py-2 text-sm">{language === "id" ? "Qty" : "数量"}</th>
               </tr>
             </thead>
             <tbody>
@@ -1273,10 +1296,12 @@ const SuratJalanPreview = ({
                     <div className="border border-gray-300 w-5 h-5"></div>
                   </td>
                   {language === "id" ? (
-                      <td className="py-2">{item.name}</td>
-                    ) : (
-                      <td className="py-2">{item.name} {item.namaMandarin}</td>
-                    )}
+                    <td className="py-2">{item.name}</td>
+                  ) : (
+                    <td className="py-2">
+                      {item.name} {item.namaMandarin}
+                    </td>
+                  )}
                   <td className="py-2">
                     {item.qty} {item.unit}
                   </td>
@@ -1304,4 +1329,3 @@ const SuratJalanPreview = ({
     </Card>
   )
 }
-
