@@ -203,7 +203,7 @@ export function CreateNota() {
   }, [])
 
   const addNewItem = (e?: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent) => {
-    if (e && 'key' in e && e.key !== "Enter") return
+    if (e && "key" in e && e.key !== "Enter") return
     if (!newItem.itemId || newItem.qty <= 0 || !newItem.unit) {
       return
     }
@@ -225,8 +225,8 @@ export function CreateNota() {
                 price: newItem.price,
                 unit: newItem.unit,
               }
-            : item
-        )
+            : item,
+        ),
       )
       setEditingItemId(null)
     } else {
@@ -265,7 +265,7 @@ export function CreateNota() {
   const editItem = (id: number) => {
     // If clicking the same item that's already being edited, cancel edit mode
     if (editingItemId === id) {
-      setEditingItemId(null);
+      setEditingItemId(null)
       // Reset form
       setNewItem({
         itemId: "",
@@ -274,10 +274,10 @@ export function CreateNota() {
         qty: 1,
         price: 0,
         unit: "",
-      });
-      return;
+      })
+      return
     }
-    
+
     const itemToEdit = items.find((item) => item.id === id)
     if (!itemToEdit) return
 
@@ -788,7 +788,9 @@ export function CreateNota() {
                       <div className="border border-gray-300 w-4 h-4"></div>
                     </td>
                     {isMandarin ? (
-                      <td className="py-2">{item.name} {item.namaMandarin}</td>
+                      <td className="py-2">
+                        {item.name} {item.namaMandarin}
+                      </td>
                     ) : (
                       <td className="py-2">{item.name}</td>
                     )}
@@ -905,7 +907,9 @@ export function CreateNota() {
                       <div className="border border-gray-300 w-5 h-5"></div>
                     </td>
                     {isMandarin ? (
-                      <td className="py-2">{item.name} {item.namaMandarin}</td>
+                      <td className="py-2">
+                        {item.name} {item.namaMandarin}
+                      </td>
                     ) : (
                       <td className="py-2">{item.name}</td>
                     )}
@@ -1241,4 +1245,3 @@ export function CreateNota() {
     </div>
   )
 }
-
