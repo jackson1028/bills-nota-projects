@@ -210,7 +210,10 @@ export function CreateNota() {
 
     const selectedItem = availableItems.find((item) => item._id === newItem.itemId)
     if (!selectedItem) return
-
+    function generateSixDigitNumber() {
+      return Math.floor(100000 + Math.random() * 900000);
+    }
+    
     if (editingItemId !== null) {
       // Update existing item
       setItems(
@@ -234,7 +237,7 @@ export function CreateNota() {
       setItems([
         ...items,
         {
-          id: items.length + 1,
+          id: generateSixDigitNumber(),
           itemId: selectedItem._id,
           name: selectedItem.nama,
           namaMandarin: selectedItem.namaMandarin,

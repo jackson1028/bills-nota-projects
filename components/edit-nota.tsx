@@ -235,6 +235,10 @@ export function EditNota({ notaId }: { notaId: string }) {
     setItems(items.filter((item) => item.id !== id))
   }
 
+  function generateSixDigitNumber() {
+    return Math.floor(100000 + Math.random() * 900000);
+  }
+  
   const editItem = (id: string) => {
     // If clicking the same item that's already being edited, cancel edit mode
     if (editingItemId === id) {
@@ -281,13 +285,13 @@ export function EditNota({ notaId }: { notaId: string }) {
     }
 
     setIsLoading(true)
-
+    
     try {
       // Convert items to the format expected by the API
       // If the backend expects numeric IDs, we need to handle that here
       const itemsForApi = items.map((item, index) => ({
         ...item,
-        id: index + 1, // Use sequential numbers for the API if needed
+        id: generateSixDigitNumber(), // Use sequential numbers for the API if needed
       }))
 
       const response = await fetch(`/api/notas/${notaId}`, {
@@ -341,7 +345,7 @@ export function EditNota({ notaId }: { notaId: string }) {
       // Convert items to the format expected by the API
       const itemsForApi = items.map((item, index) => ({
         ...item,
-        id: index + 1, // Use sequential numbers for the API if needed
+        id: generateSixDigitNumber(), // Use sequential numbers for the API if needed
       }))
 
       const response = await fetch(`/api/notas/${notaId}`, {

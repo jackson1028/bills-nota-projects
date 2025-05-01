@@ -1,0 +1,2 @@
+uri: mongodb+srv://piro:wanipiro2024@cluster0.63xctpl.mongodb.net/notaAppBackup?retryWrites=true&w=majority&appName=Cluster0
+#nsInclude: notaApp.*
