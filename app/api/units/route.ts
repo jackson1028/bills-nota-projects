@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
+import { escapeRegex } from "@/lib/utils"
 
 export async function GET(request: Request) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
     const query: any = {}
 
     if (search) {
-      query.name = { $regex: search, $options: "i" }
+      query.name = { $regex: escapeRegex(search), $options: "i" }
     }
 
     const units = await db.collection("units").find(query).toArray()
